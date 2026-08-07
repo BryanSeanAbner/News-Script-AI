@@ -8,8 +8,6 @@ load_dotenv()
 def generate_content_with_fallback(prompt: str):
     load_dotenv(override=True)
     api_key = os.getenv("GEMINI_API_KEY", "")
-    if not api_key or api_key.startswith("AQ."):
-        raise ValueError("GEMINI_API_KEY di Vercel Settings belum valid. Gunakan API key resmi dari Google AI Studio yang diawali 'AIzaSy...'.")
 
     genai.configure(api_key=api_key)
     models_to_try = [

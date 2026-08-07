@@ -126,8 +126,20 @@ export default function EditorPage() {
 
       if (res.status === 401) { router.replace("/login"); return; }
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Analisis gagal");
+        let errorMsg = "Analisis gagal";
+        try {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const data = await res.json();
+            errorMsg = data.detail || errorMsg;
+          } else {
+            const text = await res.text();
+            errorMsg = text.length < 200 ? text : `Server error (${res.status})`;
+          }
+        } catch {
+          errorMsg = `Server error (${res.status})`;
+        }
+        throw new Error(errorMsg);
       }
 
       const data: AnalysisResult = await res.json();

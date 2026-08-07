@@ -152,6 +152,33 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <main className="gh-main">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="gh-mobile-nav">
+        {navItems.map(item => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`gh-mobile-nav-item ${pathname === item.href ? "active" : ""}`}
+          >
+            <span className="gh-mobile-nav-icon">{item.icon}</span>
+            <span>{item.label}</span>
+          </Link>
+        ))}
+        {user?.role === "admin" && (
+          <Link
+            href="/users"
+            className={`gh-mobile-nav-item ${pathname === "/users" ? "active" : ""}`}
+          >
+            <span className="gh-mobile-nav-icon">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M5.5 3.5a2 2 0 100 4 2 2 0 000-4zM2 5.5a3.5 3.5 0 115.898 2.549 5.507 5.507 0 013.034 4.084.75.75 0 11-1.482.235 4.001 4.001 0 00-7.9 0 .75.75 0 01-1.482-.236A5.507 5.507 0 013.102 8.05 3.49 3.49 0 002 5.5z" />
+              </svg>
+            </span>
+            <span>Tim</span>
+          </Link>
+        )}
+      </nav>
     </div>
   );
 }

@@ -14,7 +14,6 @@ def generate_content_with_fallback(prompt: str):
         "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-flash-latest",
-        "gemini-3.6-flash"
     ]
     last_error = None
     for model_name in models_to_try:

@@ -91,28 +91,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <span>NewsScript AI</span>
         </Link>
 
-        <nav className="gh-header-nav">
-          {navItems.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`gh-header-nav-item ${pathname === item.href ? "active" : ""}`}
-              style={{ textDecoration: "none" }}
-            >
-              {item.label}
-            </Link>
-          ))}
-          {user?.role === "admin" && (
-            <Link
-              href="/users"
-              className={`gh-header-nav-item ${pathname === "/users" ? "active" : ""}`}
-              style={{ textDecoration: "none" }}
-            >
-              Anggota Tim
-            </Link>
-          )}
-        </nav>
-
         <div className="gh-header-actions" />
       </header>
 

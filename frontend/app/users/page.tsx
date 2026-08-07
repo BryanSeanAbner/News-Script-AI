@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
@@ -208,6 +208,7 @@ export default function UsersPage() {
             <div className="gh-spinner gh-spinner-lg" style={{ margin: "0 auto" }} />
           </div>
         ) : (
+          <div className="gh-table-responsive">
           <table className="gh-table">
             <thead>
               <tr>
@@ -223,7 +224,7 @@ export default function UsersPage() {
             <tbody>
               {users.map(user => (
                 <tr key={user.id}>
-                  <td style={{ fontWeight: 500 }}>{user.full_name || "—"}</td>
+                  <td style={{ fontWeight: 500 }}>{user.full_name || "â€”"}</td>
                   <td style={{ fontFamily: "var(--font-family-mono)", fontSize: "var(--font-size-small)" }}>@{user.username}</td>
                   <td style={{ color: "var(--color-fg-muted)", fontSize: "var(--font-size-small)" }}>{user.email}</td>
                   <td>
@@ -279,8 +280,10 @@ export default function UsersPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </AppLayout>
   );
 }
+

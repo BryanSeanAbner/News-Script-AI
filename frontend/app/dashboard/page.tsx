@@ -127,7 +127,7 @@ export default function DashboardPage() {
         <div className="gh-box-header">
           <span className="gh-box-title">Mulai Buat Naskah Baru</span>
         </div>
-        <div className="gh-box-body" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="gh-box-body flex-mobile-col" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ color: "var(--color-fg-muted)", fontSize: "var(--font-size-body)" }}>
             Paste teks berita dari media online, lalu biarkan AI menganalisis dan membuat naskah untuk semua platform.
           </p>
@@ -169,43 +169,45 @@ export default function DashboardPage() {
             </button>
           </div>
         ) : (
-          <table className="gh-table">
-            <thead>
-              <tr>
-                <th>Headline</th>
-                <th>Platform</th>
-                <th>Kata</th>
-                <th>Diperbarui</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {scripts.map(script => (
-                <tr key={script.id}>
-                  <td>
-                    <span style={{ fontWeight: 500 }}>{script.headline || "(Tanpa judul)"}</span>
-                  </td>
-                  <td>
-                    <span className={`gh-label ${platformColors[script.platform] || "gh-label-neutral"}`}>
-                      {platformNames[script.platform] || script.platform}
-                    </span>
-                  </td>
-                  <td style={{ color: "var(--color-fg-muted)" }}>{script.word_count || "—"}</td>
-                  <td style={{ color: "var(--color-fg-muted)", fontSize: "var(--font-size-small)" }}>
-                    {formatDate(script.updated_at)}
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => router.push(`/history`)}
-                      className="gh-btn gh-btn-sm gh-btn-default"
-                    >
-                      Buka
-                    </button>
-                  </td>
+          <div className="gh-table-responsive">
+            <table className="gh-table">
+              <thead>
+                <tr>
+                  <th>Headline</th>
+                  <th>Platform</th>
+                  <th>Kata</th>
+                  <th>Diperbarui</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {scripts.map(script => (
+                  <tr key={script.id}>
+                    <td>
+                      <span style={{ fontWeight: 500 }}>{script.headline || "(Tanpa judul)"}</span>
+                    </td>
+                    <td>
+                      <span className={`gh-label ${platformColors[script.platform] || "gh-label-neutral"}`}>
+                        {platformNames[script.platform] || script.platform}
+                      </span>
+                    </td>
+                    <td style={{ color: "var(--color-fg-muted)" }}>{script.word_count || "—"}</td>
+                    <td style={{ color: "var(--color-fg-muted)", fontSize: "var(--font-size-small)" }}>
+                      {formatDate(script.updated_at)}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => router.push(`/history`)}
+                        className="gh-btn gh-btn-sm gh-btn-default"
+                      >
+                        Lihat
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </AppLayout>

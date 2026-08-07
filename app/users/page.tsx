@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
@@ -161,7 +161,7 @@ export default function UsersPage() {
           <div className="gh-box-body animate-fade-in" style={{ borderBottom: "1px solid var(--color-border-default)", backgroundColor: "var(--color-canvas-subtle)" }}>
             <h3 style={{ fontWeight: 600, marginBottom: "var(--space-4)", fontSize: "var(--font-size-body)" }}>Tambah Anggota Baru</h3>
             <form onSubmit={handleCreate}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
+              <div className="gh-users-form-grid">
                 <div className="gh-form-group">
                   <label className="gh-label-text">Nama Lengkap</label>
                   <input className="gh-input" type="text" value={form.full_name}
@@ -208,6 +208,7 @@ export default function UsersPage() {
             <div className="gh-spinner gh-spinner-lg" style={{ margin: "0 auto" }} />
           </div>
         ) : (
+          <div className="gh-table-responsive">
           <table className="gh-table">
             <thead>
               <tr>
@@ -223,7 +224,7 @@ export default function UsersPage() {
             <tbody>
               {users.map(user => (
                 <tr key={user.id}>
-                  <td style={{ fontWeight: 500 }}>{user.full_name || "—"}</td>
+                  <td style={{ fontWeight: 500 }}>{user.full_name || "â€”"}</td>
                   <td style={{ fontFamily: "var(--font-family-mono)", fontSize: "var(--font-size-small)" }}>@{user.username}</td>
                   <td style={{ color: "var(--color-fg-muted)", fontSize: "var(--font-size-small)" }}>{user.email}</td>
                   <td>
@@ -279,8 +280,10 @@ export default function UsersPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </AppLayout>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
@@ -25,7 +25,7 @@ const platformNames: Record<string, string> = {
   instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube Shorts",
 };
 const platformIcons: Record<string, string> = {
-  tv_radio: "📺", article: "📰", instagram: "📷", tiktok: "🎵", youtube: "▶️",
+  tv_radio: "ðŸ“º", article: "ðŸ“°", instagram: "ðŸ“·", tiktok: "ðŸŽµ", youtube: "â–¶ï¸",
 };
 const platformColors: Record<string, string> = {
   tv_radio: "gh-label-accent", article: "gh-label-success",
@@ -92,9 +92,9 @@ export default function HistoryPage() {
         <p className="gh-page-subtitle">Semua naskah yang telah dibuat oleh tim redaksi</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 1.2fr" : "1fr", gap: "var(--space-6)" }}>
+      <div className={`gh-history-grid ${selected ? "gh-history-grid--split" : ""}`} style={{ display: "grid", gap: "var(--space-6)" }}>
 
-        {/* Left — Script List */}
+        {/* Left â€” Script List */}
         <div>
           {/* Filter Tabs */}
           <div className="gh-box mb-4">
@@ -130,8 +130,9 @@ export default function HistoryPage() {
                 </button>
               </div>
             ) : (
-              <table className="gh-table">
-                <thead>
+              <div className="gh-table-responsive">
+                <table className="gh-table">
+                  <thead>
                   <tr>
                     <th>Headline</th>
                     <th>Platform</th>
@@ -155,7 +156,7 @@ export default function HistoryPage() {
                         </span>
                         {script.angle && (
                           <span style={{ fontSize: "11px", color: "var(--color-fg-muted)" }}>
-                            📐 {script.angle}
+                            ðŸ“ {script.angle}
                           </span>
                         )}
                       </td>
@@ -172,7 +173,7 @@ export default function HistoryPage() {
                         )}
                       </td>
                       <td style={{ color: "var(--color-fg-muted)", fontSize: "var(--font-size-small)" }}>
-                        {script.word_count || "—"}
+                        {script.word_count || "â€”"}
                       </td>
                       <td style={{ color: "var(--color-fg-muted)", fontSize: "var(--font-size-small)" }}>
                         v{script.version}
@@ -198,11 +199,12 @@ export default function HistoryPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
             )}
           </div>
         </div>
 
-        {/* Right — Script Detail Preview */}
+        {/* Right â€” Script Detail Preview */}
         {selected && (
           <div className="animate-slide-right">
             <div className="gh-box">
@@ -213,7 +215,7 @@ export default function HistoryPage() {
                     onClick={() => handleCopy(`${selected.headline || ""}\n\n${selected.content}`)}
                     className={`gh-btn gh-btn-sm gh-btn-default ${copied ? "gh-copy-btn copied" : ""}`}
                   >
-                    {copied ? "✓ Disalin!" : "Copy"}
+                    {copied ? "âœ“ Disalin!" : "Copy"}
                   </button>
                   <a
                     href={`${API}/api/scripts/${selected.id}/export?format=txt`}
@@ -231,7 +233,7 @@ export default function HistoryPage() {
                   >
                     .docx
                   </a>
-                  <button onClick={() => setSelected(null)} className="gh-btn gh-btn-sm gh-btn-default">✕</button>
+                  <button onClick={() => setSelected(null)} className="gh-btn gh-btn-sm gh-btn-default">âœ•</button>
                 </div>
               </div>
               <div className="gh-box-body">
@@ -263,7 +265,7 @@ export default function HistoryPage() {
                 </div>
                 <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-default)" }}>
                   <span style={{ fontSize: "var(--font-size-small)", color: "var(--color-fg-muted)" }}>
-                    Dibuat: {formatDate(selected.created_at)} · Diperbarui: {formatDate(selected.updated_at)}
+                    Dibuat: {formatDate(selected.created_at)} Â· Diperbarui: {formatDate(selected.updated_at)}
                   </span>
                 </div>
               </div>
@@ -274,3 +276,4 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
+

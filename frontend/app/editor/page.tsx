@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
@@ -6,11 +6,11 @@ import AppLayout from "@/components/AppLayout";
 const API = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" && window.location.hostname !== "localhost" ? "" : "http://localhost:8000");
 
 const PLATFORMS = [
-  { id: "tv_radio", label: "TV / Radio", icon: "📺" },
-  { id: "article", label: "Artikel Online", icon: "📰" },
-  { id: "instagram", label: "Instagram", icon: "📷" },
-  { id: "tiktok", label: "TikTok", icon: "🎵" },
-  { id: "youtube", label: "YouTube Shorts", icon: "▶️" },
+  { id: "tv_radio", label: "TV / Radio", icon: "ðŸ“º" },
+  { id: "article", label: "Artikel Online", icon: "ðŸ“°" },
+  { id: "instagram", label: "Instagram", icon: "ðŸ“·" },
+  { id: "tiktok", label: "TikTok", icon: "ðŸŽµ" },
+  { id: "youtube", label: "YouTube Shorts", icon: "â–¶ï¸" },
 ];
 
 type Step = "idle" | "analyzing" | "done" | "error";
@@ -231,9 +231,9 @@ export default function EditorPage() {
         <p className="gh-page-subtitle">Paste teks berita, pilih platform, dan biarkan AI menganalisis serta membuat naskah terbaik</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: step === "done" ? "1fr 1fr" : "1fr", gap: "var(--space-6)" }}>
+      <div className="gh-editor-outer" style={{ gridTemplateColumns: step === "done" ? "1fr 1fr" : "1fr", gap: "var(--space-6)" }}>
 
-        {/* ── Panel Kiri: Input ── */}
+        {/* â”€â”€ Panel Kiri: Input â”€â”€ */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
 
           {/* Input Teks */}
@@ -343,7 +343,7 @@ export default function EditorPage() {
                     return (
                       <div key={i} className="gh-step">
                         <div className={`gh-step-dot ${isDone ? "done" : isActive ? "loading" : "pending"}`}>
-                          {isDone ? "✓" : i + 1}
+                          {isDone ? "âœ“" : i + 1}
                         </div>
                         <div className="gh-step-body">
                           <div className="gh-step-title" style={{ opacity: isDone || isActive ? 1 : 0.5 }}>{label}</div>
@@ -364,7 +364,7 @@ export default function EditorPage() {
               onClick={handleAnalyze}
               className="gh-btn gh-btn-accent gh-btn-lg w-full"
             >
-              {step === "done" ? "Analisis Ulang" : "✨ Analisis dengan AI"}
+              {step === "done" ? "Analisis Ulang" : "âœ¨ Analisis dengan AI"}
             </button>
           )}
 
@@ -375,7 +375,7 @@ export default function EditorPage() {
                 <span className="gh-box-title">Hasil Analisis AI</span>
                 <span className={`gh-label ${sentimentLabel[result.result.facts.sentiment.label]?.cls || "gh-label-neutral"}`}>
                   {sentimentLabel[result.result.facts.sentiment.label]?.label}
-                  {" · "}
+                  {" Â· "}
                   {result.result.facts.sentiment.dominant_emotion}
                 </span>
               </div>
@@ -407,7 +407,7 @@ export default function EditorPage() {
           {step === "done" && result && (
             <div className="gh-box animate-fade-in">
               <div className="gh-box-header">
-                <span className="gh-box-title">🎯 Top 3 Angle Rekomendasi AI</span>
+                <span className="gh-box-title">ðŸŽ¯ Top 3 Angle Rekomendasi AI</span>
               </div>
               <div className="gh-box-body" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                 {result.result.top3_angles.map((angle, idx) => (
@@ -445,7 +445,7 @@ export default function EditorPage() {
                       ))}
                     </div>
                     <p style={{ fontSize: "var(--font-size-small)", color: "var(--color-fg-muted)", marginTop: "var(--space-2)", fontStyle: "italic" }}>
-                      💡 {angle.reasoning}
+                      ðŸ’¡ {angle.reasoning}
                     </p>
                     {regenerating && selectedAngleIdx === idx && (
                       <div style={{ marginTop: "var(--space-2)", display: "flex", alignItems: "center", gap: "var(--space-2)", color: "var(--color-accent-fg)" }}>
@@ -460,14 +460,14 @@ export default function EditorPage() {
           )}
         </div>
 
-        {/* ── Panel Kanan: Naskah Editor ── */}
+        {/* â”€â”€ Panel Kanan: Naskah Editor â”€â”€ */}
         {step === "done" && result && (
           <div className="animate-slide-right" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
             <div className="gh-box" style={{ flex: 1 }}>
               <div className="gh-box-header">
                 <span className="gh-box-title">Naskah</span>
                 {saveSuccess && (
-                  <span className="gh-label gh-label-success animate-fade-in">✓ Tersimpan!</span>
+                  <span className="gh-label gh-label-success animate-fade-in">âœ“ Tersimpan!</span>
                 )}
               </div>
 
@@ -555,7 +555,7 @@ export default function EditorPage() {
                       onClick={() => handleCopy(`${editedHeadline[activePlatform] || ""}\n\n${editedContent[activePlatform] || ""}`)}
                       className={`gh-btn gh-btn-default ${copied ? "gh-copy-btn copied" : ""}`}
                     >
-                      {copied ? "✓ Disalin!" : (
+                      {copied ? "âœ“ Disalin!" : (
                         <>
                           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                             <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" />
@@ -598,3 +598,4 @@ export default function EditorPage() {
     </AppLayout>
   );
 }
+

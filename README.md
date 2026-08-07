@@ -76,4 +76,5 @@ Frontend akan berjalan di **`http://localhost:3000`**.
 
 - **Frontend**: Next.js 14 / 16 (App Router), TypeScript, Tailwind CSS, GitHub Primer Light System, Lucide Icons.
 - **Backend**: Python 3.10+, FastAPI, SQLAlchemy, SQLite, python-jose (JWT), python-docx.
-- **AI Agent**: Google Gemini 1.5 Flash (`google-generativeai` SDK).
+- **AI Agent**: Google Gemini Flash (`google-generativeai` SDK).
+- **Deployment**: Vercel (Next.js + Python Serverless).

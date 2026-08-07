@@ -113,26 +113,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           )}
         </nav>
 
-        <div className="gh-header-actions">
-          {user && (
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-              <span style={{ fontSize: "var(--font-size-small)", color: "rgba(255,255,255,0.7)" }}>
-                {user.full_name || user.username}
-              </span>
-              <div className="gh-avatar gh-avatar-md" style={{ fontSize: "11px" }}>
-                {getInitials(user)}
-              </div>
-              <button
-                id="btn-logout"
-                onClick={logout}
-                className="gh-btn gh-btn-sm"
-                style={{ backgroundColor: "transparent", borderColor: "rgba(255,255,255,0.3)", color: "rgba(255,255,255,0.7)" }}
-              >
-                Keluar
-              </button>
-            </div>
-          )}
-        </div>
+        <div className="gh-header-actions" />
       </header>
 
       {/* Sidebar */}

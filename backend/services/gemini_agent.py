@@ -12,7 +12,6 @@ def generate_content_with_fallback(prompt: str):
     genai.configure(api_key=api_key)
     models_to_try = [
         "gemini-2.5-flash",
-        "gemini-2.0-flash",
         "gemini-flash-latest",
     ]
     last_error = None

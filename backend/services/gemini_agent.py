@@ -7,18 +7,24 @@ load_dotenv()
 
 def generate_content_with_fallback(prompt: str):
     load_dotenv(override=True)
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    if not api_key or api_key.startswith("AQ."):
+        raise ValueError("GEMINI_API_KEY di Vercel Settings belum valid. Gunakan API key resmi dari Google AI Studio yang diawali 'AIzaSy...'.")
+
+    genai.configure(api_key=api_key)
     models_to_try = [
         "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-flash-latest",
-        "gemini-1.5-flash"
+        "gemini-3.6-flash"
     ]
     last_error = None
     for model_name in models_to_try:
         try:
             m = genai.GenerativeModel(model_name)
-            return m.generate_content(prompt)
+            res = m.generate_content(prompt)
+            if res and hasattr(res, 'text') and res.text:
+                return res
         except Exception as e:
             last_error = e
             continue

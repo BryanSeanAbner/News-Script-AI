@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "fact_extraction",
+  "title": "Fact Extraction — Step 2",
+  "description": "Output ekstraksi fakta dari artikel referensi oleh Gemini Flash",
+  "type": "object",
+  "required": ["facts", "entity_map", "model_used", "extracted_at"],
+  "properties": {
+    "facts": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Daftar fakta yang diekstrak dari artikel",
+      "items": {
+        "type": "object",
+        "required": ["id", "claim", "category"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^fact_[0-9]+$",
+            "description": "ID unik fakta, format: fact_001"
+          },
+          "claim": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Pernyataan fakta dalam satu kalimat"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["who", "what", "when", "where", "why", "how", "statistic", "quote"],
+            "description": "Kategori fakta berdasarkan 5W+1H"
+          },
+          "entities": {
+            "type": "array",
+            "description": "Entitas yang terlibat dalam fakta ini",
+            "items": {
+              "type": "string"
+            }
+          },
+          "temporal": {
+            "type": "string",
+            "description": "Waktu/tanggal yang relevan dengan fakta (jika ada)"
+          },
+          "source_sentence": {
+            "type": "string",
+            "description": "Kalimat asli dari artikel yang menjadi dasar fakta ini"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Confidence score LLM untuk fakta ini"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "entity_map": {
+      "type": "object",
+      "description": "Peta entitas ke daftar fact_id yang menyebutnya",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Ringkasan singkat dari artikel referensi (1-3 kalimat)"
+    },
+    "total_facts": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Jumlah total fakta yang diekstrak"
+    },
+    "model_used": {
+      "type": "string",
+      "description": "Model Gemini yang digunakan (dari env GEMINI_MODEL)"
+    },
+    "extracted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp ekstraksi"
+    },
+    "token_usage": {
+      "type": "object",
+      "properties": {
+        "input_tokens": { "type": "integer" },
+        "output_tokens": { "type": "integer" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

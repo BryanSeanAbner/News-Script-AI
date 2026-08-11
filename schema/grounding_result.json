@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "grounding_result",
+  "title": "Grounding Result — Step 8",
+  "description": "Output verifikasi klaim draft vs JSON fakta oleh Gemini Flash",
+  "type": "object",
+  "required": ["grounding_score", "status", "total_claims", "grounded_claims", "ungrounded_claims", "claim_evidence_map", "model_used", "checked_at"],
+  "properties": {
+    "grounding_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Skor grounding keseluruhan = grounded_claims / total_claims"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL"],
+      "description": "PASS (>=0.85), WARN (>=0.70), FAIL (<0.70)"
+    },
+    "total_claims": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Total klaim yang diidentifikasi dalam draft"
+    },
+    "grounded_claims": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Jumlah klaim yang memiliki dukungan fakta"
+    },
+    "ungrounded_claims": {
+      "type": "array",
+      "description": "Klaim yang TIDAK memiliki dukungan dari fact_extraction",
+      "items": {
+        "type": "object",
+        "required": ["claim_text", "severity"],
+        "properties": {
+          "claim_text": {
+            "type": "string",
+            "description": "Teks klaim yang tidak grounded"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "major", "minor"],
+            "description": "Tingkat keparahan klaim yang tidak grounded"
+          },
+          "suggestion": {
+            "type": "string",
+            "description": "Saran perbaikan dari LLM"
+          }
+        }
+      }
+    },
+    "claim_evidence_map": {
+      "type": "array",
+      "description": "Pemetaan setiap klaim ke fakta pendukungnya",
+      "items": {
+        "type": "object",
+        "required": ["claim_text", "is_grounded"],
+        "properties": {
+          "claim_text": {
+            "type": "string",
+            "description": "Teks klaim dari draft"
+          },
+          "is_grounded": {
+            "type": "boolean",
+            "description": "Apakah klaim ini punya dukungan fakta"
+          },
+          "supporting_fact_ids": {
+            "type": "array",
+            "description": "fact_id yang mendukung klaim ini",
+            "items": {
+              "type": "string",
+              "pattern": "^fact_[0-9]+$"
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Confidence LLM bahwa mapping ini benar"
+          }
+        }
+      }
+    },
+    "recommendation": {
+      "type": "string",
+      "description": "Rekomendasi LLM: lanjut / revisi minor / revisi major"
+    },
+    "trigger_loop": {
+      "type": ["string", "null"],
+      "enum": ["LOOP_SMALL", null],
+      "description": "Jika FAIL, sistem otomatis trigger LOOP_SMALL"
+    },
+    "model_used": {
+      "type": "string",
+      "description": "Model Gemini yang digunakan"
+    },
+    "checked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "token_usage": {
+      "type": "object",
+      "properties": {
+        "input_tokens": { "type": "integer" },
+        "output_tokens": { "type": "integer" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

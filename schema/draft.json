@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Draft Generation Output (Step 5)",
+  "description": "Output Step 5 Draft Generation — artikel jurnalistik dengan paragraf berlabel [FACT/CONTEXT/OPINI]",
+  "type": "object",
+  "required": ["title", "paragraphs", "word_count", "grounding_constraint"],
+  "properties": {
+    "title": { "type": "string" },
+    "paragraphs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["order", "type", "text"],
+        "properties": {
+          "order": { "type": "integer" },
+          "type": {
+            "type": "string",
+            "enum": ["FACT", "CONTEXT", "OPINI"],
+            "description": "FACT=klaim dari sumber, CONTEXT=latar belakang AI, OPINI=interpretasi AI"
+          },
+          "text": { "type": "string" },
+          "source_fact_id": { "type": ["string", "null"], "description": "fact_id dari step 2 jika type=FACT" },
+          "quote": { "type": ["string", "null"], "description": "Kutipan verbatim dari sumber jika type=FACT" }
+        }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "order": { "type": "integer" },
+          "heading": { "type": "string" },
+          "paragraph_orders": { "type": "array", "items": { "type": "integer" } }
+        }
+      }
+    },
+    "content": { "type": "string", "description": "Full text artikel (concat dari paragraphs)" },
+    "word_count": { "type": "integer" },
+    "label_stats": {
+      "type": "object",
+      "properties": {
+        "FACT": { "type": "integer" },
+        "CONTEXT": { "type": "integer" },
+        "OPINI": { "type": "integer" }
+      }
+    },
+    "grounding_constraint": {
+      "type": "object",
+      "properties": {
+        "constraint_applied": { "type": "boolean" },
+        "fact_ids_used": { "type": "array", "items": { "type": "string" } },
+        "fact_count_available": { "type": "integer" }
+      }
+    },
+    "revision_context": {
+      "type": ["object", "null"],
+      "properties": {
+        "is_revision": { "type": "boolean" },
+        "revision_number": { "type": "integer" },
+        "editor_notes": { "type": "string" }
+      }
+    },
+    "model_used": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" }
+  }
+}

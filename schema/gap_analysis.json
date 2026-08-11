@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "gap_analysis",
+  "title": "Gap Analysis — Step 3",
+  "description": "Output analisis gap — sudut berita yang belum dibahas artikel referensi",
+  "type": "object",
+  "required": ["gaps", "model_used", "analyzed_at"],
+  "properties": {
+    "gaps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "description": "Daftar gap yang teridentifikasi, diurutkan dari paling relevan",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "description", "relevance_score", "supporting_fact_ids"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^gap_[0-9]+$",
+            "description": "ID unik gap, format: gap_001"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 150,
+            "description": "Judul singkat gap (pertanyaan yang belum terjawab)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Penjelasan mengapa ini merupakan gap dan mengapa penting"
+          },
+          "relevance_score": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Skor relevansi gap (1.0 = sangat relevan & penting)"
+          },
+          "gap_type": {
+            "type": "string",
+            "enum": ["missing_context", "unexplored_angle", "follow_up", "counter_perspective", "impact_analysis", "human_interest"],
+            "description": "Jenis gap"
+          },
+          "supporting_fact_ids": {
+            "type": "array",
+            "description": "fact_id yang mendukung eksistensi gap ini",
+            "items": {
+              "type": "string",
+              "pattern": "^fact_[0-9]+$"
+            }
+          },
+          "potential_sources": {
+            "type": "array",
+            "description": "Sumber potensial untuk mengisi gap ini",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "top_gaps": {
+      "type": "array",
+      "maxItems": 3,
+      "description": "Top 3 gap ID yang diprioritaskan untuk dijadikan angle",
+      "items": {
+        "type": "string",
+        "pattern": "^gap_[0-9]+$"
+      }
+    },
+    "analysis_notes": {
+      "type": "string",
+      "description": "Catatan analisis dari LLM tentang pola gap yang ditemukan"
+    },
+    "model_used": {
+      "type": "string",
+      "description": "Model Gemini yang digunakan"
+    },
+    "analyzed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "token_usage": {
+      "type": "object",
+      "properties": {
+        "input_tokens": { "type": "integer" },
+        "output_tokens": { "type": "integer" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

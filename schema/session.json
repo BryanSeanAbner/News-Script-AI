@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NewsScript AI Session (8-step pipeline)",
+  "description": "Schema for a complete pipeline session: Input → Fact Extraction → Gap Analysis → Pilih Angle & Judul → Draft Generation → Grounding Check → Editorial Review → Publish",
+  "type": "object",
+  "required": ["session_id", "created_at", "current_step", "status", "step_statuses", "data"],
+  "properties": {
+    "session_id": { "type": "string", "format": "uuid" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "current_step": { "type": "integer", "minimum": 1, "maximum": 8 },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "in_progress", "completed", "error"]
+    },
+    "revision_loop": {
+      "type": ["string", "null"],
+      "enum": ["LOOP_SMALL", "LOOP_LARGE", null]
+    },
+    "revision_count": {
+      "type": "object",
+      "properties": {
+        "small": { "type": "integer", "minimum": 0 },
+        "large": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "step_statuses": {
+      "type": "object",
+      "properties": {
+        "step_1": { "type": "string", "enum": ["pending", "done", "error"] },
+        "step_2": { "type": "string", "enum": ["pending", "running", "done", "error"] },
+        "step_3": { "type": "string", "enum": ["pending", "running", "done", "error"] },
+        "step_4": { "type": "string", "enum": ["pending", "done", "error"] },
+        "step_5": { "type": "string", "enum": ["pending", "running", "done", "error"] },
+        "step_6": { "type": "string", "enum": ["pending", "running", "done", "error"] },
+        "step_7": { "type": "string", "enum": ["pending", "approved", "revision_small", "revision_large", "error"] },
+        "step_8": { "type": "string", "enum": ["pending", "done"] }
+      }
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "step_1": { "description": "Input artikel referensi (title, body, sources, metadata)" },
+        "step_2": { "description": "Fact Extraction — facts[], total_facts, summary" },
+        "step_3": { "description": "Gap Analysis & Angle Mapping — gaps[], top_gaps[], angles[], analysis_notes" },
+        "step_4": { "description": "Pilih Angle & Judul — selected_angle_id, selected_title, titles[], primary_keyword" },
+        "step_5": { "description": "Draft Generation — paragraphs[] with [FACT/CONTEXT/OPINI] labels, content, word_count, label_stats" },
+        "step_6": { "description": "Grounding Check — grounding_score, status, total_claims, grounded_claims, ungrounded_claims[]" },
+        "step_7": { "description": "Editorial Review — review_status, editor_notes, reviewed_at" },
+        "step_8": { "description": "Publish Output — article, publication_meta, pipeline_summary, published_at" }
+      }
+    },
+    "error_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": { "type": "integer" },
+          "error_type": { "type": "string" },
+          "message": { "type": "string" },
+          "occurred_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

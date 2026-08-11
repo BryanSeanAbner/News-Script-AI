@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "publish_output",
+  "title": "Publish Output — Step 10",
+  "description": "Output akhir setelah artikel diapprove editor dan dipublish",
+  "type": "object",
+  "required": ["session_id", "article", "publication_meta", "pipeline_summary", "published_at"],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Session ID yang menghasilkan artikel ini"
+    },
+    "article": {
+      "type": "object",
+      "required": ["title", "content", "word_count"],
+      "description": "Artikel final yang sudah diapprove editor",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Judul final artikel"
+        },
+        "content": {
+          "type": "string",
+          "description": "Konten artikel final (bisa berbeda dari draft jika editor edit manual)"
+        },
+        "word_count": {
+          "type": "integer",
+          "minimum": 100
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL slug dari judul (auto-generated)"
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Ringkasan artikel untuk preview/meta description"
+        }
+      }
+    },
+    "publication_meta": {
+      "type": "object",
+      "description": "Metadata publikasi",
+      "properties": {
+        "topic": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "angle_used": {
+          "type": "string",
+          "description": "Angle ID yang akhirnya dipakai"
+        },
+        "sources": {
+          "type": "array",
+          "description": "Sumber artikel referensi awal",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string" },
+              "label": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "pipeline_summary": {
+      "type": "object",
+      "description": "Ringkasan eksekusi pipeline untuk audit",
+      "properties": {
+        "total_facts_extracted": { "type": "integer" },
+        "final_grounding_score": { "type": "number" },
+        "revision_small_count": { "type": "integer", "default": 0 },
+        "revision_large_count": { "type": "integer", "default": 0 },
+        "total_ai_calls": { "type": "integer" },
+        "gemini_token_total": { "type": "integer" },
+        "grok_token_total": { "type": "integer" }
+      }
+    },
+    "editor_notes_final": {
+      "type": "string",
+      "description": "Catatan editor terakhir saat approve di Step 9"
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp publikasi"
+    },
+    "published_by": {
+      "type": "string",
+      "description": "Identifier editor yang melakukan publish"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,56 @@
+# ============================================================
+# NewsScript AI — .gitignore
+# ============================================================
+
+# Environment files — JANGAN PERNAH commit
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env.local
+
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist-info/
+
+# Build outputs
+dist/
+build/
+*.egg
+
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Data files (session & publish data — bisa besar & sensitif)
+backend/data/sessions/*.json
+backend/data/published/*.json
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml

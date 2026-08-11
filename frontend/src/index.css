@@ -1,0 +1,32 @@
+/* ============================================================
+   index.css — Entry point, import semua CSS
+   ============================================================ */
+
+@import "./styles/tokens.css";
+@import "./styles/reset.css";
+@import "./styles/layout.css";
+@import "./styles/components.css";
+@import "./styles/sidebar.css";
+
+/* Page-level animations */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+}
+
+/* Draft/article reading typography */
+.article-content {
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  color: var(--color-fg-default);
+}
+
+.article-content p { margin-bottom: var(--space-4); }
+.article-content h2 { margin: var(--space-6) 0 var(--space-3); font-size: var(--text-xl); }
+.article-content h3 { margin: var(--space-4) 0 var(--space-2); font-size: var(--text-lg); }

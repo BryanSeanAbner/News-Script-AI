@@ -1,0 +1,183 @@
+/* ============================================================
+   Sidebar — Pipeline Progress Steps
+   ============================================================ */
+
+.pipeline-steps { list-style: none; padding: 0; }
+
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  position: relative;
+  text-decoration: none;
+  color: var(--color-fg-muted);
+  font-size: var(--text-sm);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.pipeline-step:hover { background: var(--color-canvas-inset); }
+
+.pipeline-step.active {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-fg);
+  font-weight: var(--font-medium);
+}
+
+.pipeline-step.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--color-accent-emphasis);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.pipeline-step.done { color: var(--color-fg-default); }
+.pipeline-step.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+.pipeline-step.human-gate { color: var(--color-done-fg); }
+
+/* Step Icon */
+.step-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  font-family: var(--font-mono);
+  transition: all 0.15s ease;
+}
+
+.step-icon.done {
+  background: var(--color-success-emphasis);
+  border-color: var(--color-success-emphasis);
+  color: white;
+}
+
+.step-icon.active {
+  background: var(--color-accent-emphasis);
+  border-color: var(--color-accent-emphasis);
+  color: white;
+}
+
+.step-icon.running {
+  border-color: var(--color-accent-fg);
+  color: var(--color-accent-fg);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.step-icon.error {
+  background: var(--color-danger-emphasis);
+  border-color: var(--color-danger-emphasis);
+  color: white;
+}
+
+.step-icon.human {
+  border-color: var(--color-done-fg);
+  color: var(--color-done-fg);
+}
+
+/* Sidebar label */
+.sidebar-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Session info */
+.session-info {
+  font-size: var(--text-xs);
+  color: var(--color-fg-subtle);
+}
+
+.session-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  word-break: break-all;
+}
+
+/* ── Sidebar collapsed state (tablet) ───────────────────────── */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .sidebar { width: 60px; }
+  .sidebar-label { display: none; }
+  .pipeline-step {
+    justify-content: center;
+    padding: var(--space-2);
+  }
+  .pipeline-step.active::before { display: none; }
+}
+
+/* ── Main Navigation Items (Dashboard, Buat Naskah, History) ──── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  position: relative;
+  text-decoration: none;
+  color: var(--color-fg-default);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: var(--color-canvas-inset);
+}
+
+.nav-item.active {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-fg);
+}
+
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: var(--color-accent-emphasis);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Separator antara main nav dan pipeline steps */
+.sidebar-pipeline-section {
+  border-top: 1px solid var(--color-border-default);
+  padding-top: var(--space-4);
+  margin-top: var(--space-2);
+}

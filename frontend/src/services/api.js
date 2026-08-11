@@ -1,8 +1,8 @@
 /**
- * API Client — komunikasi dengan FastAPI backend (8-step pipeline)
+ * API Client — komunikasi dengan Vercel Serverless Backend
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://news-script-ai.vercel.app/api';
 
 async function request(path, options = {}) {
   const url = `${BASE_URL}${path}`;
@@ -13,65 +13,42 @@ async function request(path, options = {}) {
       ...options,
     });
   } catch (err) {
-    throw new Error(`Tidak dapat terhubung ke Backend Server (${BASE_URL}). Pastikan server backend FastAPI sedang berjalan.`);
+    throw new Error(`Tidak dapat terhubung ke Backend Serverless. Error: ${err.message}`);
   }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || `HTTP ${res.status}`);
-  }
-
-  // Handle 204 No Content (DELETE operations) — no body to parse
-  if (res.status === 204) {
-    return null;
+    throw new Error(err.detail || err.error || `HTTP ${res.status}`);
   }
 
   return res.json();
 }
 
 export const api = {
-  // Session management
-  createSession: () => request('/api/sessions', { method: 'POST' }),
-  getSession: (id) => request(`/api/sessions/${id}`),
-  listSessions: () => request('/api/sessions'),
-  deleteSession: (id) => request(`/api/sessions/${id}`, { method: 'DELETE' }),
+  // Health check
+  healthCheck: () => request('/health'),
 
-  // Step 1 — Submit artikel referensi
-  submitArticle: (id, articleData) =>
-    request(`/api/sessions/${id}/steps/1/submit`, {
-      method: 'POST', body: JSON.stringify(articleData),
+  // AI Endpoints (Serverless Functions)
+  extractFacts: (articleText) =>
+    request('/facts', {
+      method: 'POST',
+      body: JSON.stringify({ article_text: articleText }),
     }),
 
-  // AI Steps (2, 3, 5, 6)
-  runStep: (id, step) =>
-    request(`/api/sessions/${id}/steps/${step}/run`, { method: 'POST' }),
-
-  // Step 4 — Pilih angle + generate title recommendations
-  selectAngleAndGenerateTitle: (id, angleId) =>
-    request(`/api/sessions/${id}/steps/4/select-and-generate-title`, {
-      method: 'POST', body: JSON.stringify({ selected_angle_id: angleId }),
+  generateGapAnalysis: (articleText, facts) =>
+    request('/gap-analysis', {
+      method: 'POST',
+      body: JSON.stringify({ article_text: articleText, facts }),
     }),
 
-  // Step 4 — Konfirmasi judul
-  selectTitle: (id, titleId, customTitle) =>
-    request(`/api/sessions/${id}/steps/4/select-title`, {
-      method: 'POST', body: JSON.stringify({ selected_title_id: titleId, custom_title: customTitle }),
-    }),
-
-  // Step 7 — Editorial review
-  submitReview: (id, reviewStatus, editorNotes, editedContent = null) =>
-    request(`/api/sessions/${id}/steps/7/review`, {
-      method: 'POST', body: JSON.stringify({ 
-        review_status: reviewStatus, 
-        editor_notes: editorNotes,
-        edited_content: editedContent 
+  generateDraft: (angleDescription, articleTitle, facts) =>
+    request('/draft', {
+      method: 'POST',
+      body: JSON.stringify({
+        angle_description: angleDescription,
+        article_title: articleTitle,
+        facts,
       }),
     }),
-
-  // Step 8 — Publish
-  publishArticle: (id) =>
-    request(`/api/sessions/${id}/steps/8/publish`, { method: 'POST' }),
-
-  // Health check
-  healthCheck: () => request('/api/health'),
 };
+

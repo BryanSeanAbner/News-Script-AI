@@ -1,15 +1,5 @@
 {
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
-  "framework": "vite",
-  "functions": {
-    "api/**/*.py": {
-      "runtime": "python3.11"
-    }
-  }
+  "framework": "vite"
 }
-
-
-
-
-

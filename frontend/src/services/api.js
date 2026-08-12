@@ -1,5 +1,6 @@
 /**
- * API Client — komunikasi dengan Vercel Serverless Backend
+ * API Client — Stateless serverless backend
+ * Semua endpoint menerima data lengkap di request body
  */
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://news-script-ai.vercel.app/api';
@@ -25,105 +26,111 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  // Health check
+  // ══════════════════════════════════════════════════════════════════
+  // Health Check
+  // ══════════════════════════════════════════════════════════════════
+
   healthCheck: () => request('/health'),
 
-  // ── Session Management ──────────────────────────────────────────
-  
-  /** Create new session */
-  createSession: () =>
-    request('/sessions', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    }),
+  // ══════════════════════════════════════════════════════════════════
+  // STEP 2: Fact Extraction (AI)
+  // ══════════════════════════════════════════════════════════════════
 
-  /** Get session by ID */
-  getSession: (sessionId) =>
-    request(`/sessions/${sessionId}`),
-
-  /** List all sessions */
-  listSessions: () =>
-    request('/sessions'),
-
-  /** Delete session */
-  deleteSession: (sessionId) =>
-    request(`/sessions/${sessionId}`, {
-      method: 'DELETE',
-    }),
-
-  // ── Pipeline Steps ──────────────────────────────────────────────
-
-  /** Step 1: Submit article */
-  submitArticle: (sessionId, articleData) =>
-    request(`/pipeline/${sessionId}/step/1`, {
-      method: 'POST',
-      body: JSON.stringify(articleData),
-    }),
-
-  /** Steps 2, 3, 5, 6: Run AI step */
-  runStep: (sessionId, stepNumber) =>
-    request(`/pipeline/${sessionId}/step/${stepNumber}`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-    }),
-
-  /** Step 4: Select angle and generate titles (Groq) */
-  selectAngleAndGenerateTitle: (sessionId, angleId) =>
-    request(`/pipeline/${sessionId}/step/4/select-angle`, {
-      method: 'POST',
-      body: JSON.stringify({ angle_id: angleId }),
-    }),
-
-  /** Step 4: Confirm title selection */
-  selectTitle: (sessionId, titleId, customTitle) =>
-    request(`/pipeline/${sessionId}/step/4/select-title`, {
-      method: 'POST',
-      body: JSON.stringify({ 
-        title_id: titleId, 
-        custom_title: customTitle 
-      }),
-    }),
-
-  /** Step 7: Editorial review */
-  submitReview: (sessionId, reviewStatus, editorNotes, editedContent) =>
-    request(`/pipeline/${sessionId}/step/7`, {
-      method: 'POST',
-      body: JSON.stringify({
-        review_status: reviewStatus,
-        editor_notes: editorNotes,
-        edited_content: editedContent,
-      }),
-    }),
-
-  /** Step 8: Publish article */
-  publishArticle: (sessionId) =>
-    request(`/pipeline/${sessionId}/step/8`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-    }),
-
-  // ── Legacy AI Endpoints (Serverless Functions) ──────────────────
-  
-  extractFacts: (articleText) =>
-    request('/facts', {
+  /**
+   * Extract facts dari artikel
+   * @param {string} articleText - Isi artikel lengkap
+   * @returns {Promise<{facts: Array, total_facts: number}>}
+   */
+  extractFacts: async (articleText) => {
+    const response = await request('/ai/extract-facts', {
       method: 'POST',
       body: JSON.stringify({ article_text: articleText }),
-    }),
+    });
+    return response.data || response;
+  },
 
-  generateGapAnalysis: (articleText, facts) =>
-    request('/gap-analysis', {
+  // ══════════════════════════════════════════════════════════════════
+  // STEP 3: Gap Analysis & Angle Mapping (AI)
+  // ══════════════════════════════════════════════════════════════════
+
+  /**
+   * Generate gap analysis dan angle mapping
+   * @param {string} articleText - Isi artikel
+   * @param {Array} facts - Fakta dari step 2
+   * @returns {Promise<{gaps: Array, angles: Array}>}
+   */
+  generateGapAnalysis: async (articleText, facts) => {
+    const response = await request('/ai/gap-analysis', {
       method: 'POST',
       body: JSON.stringify({ article_text: articleText, facts }),
-    }),
+    });
+    return response.data || response;
+  },
 
-  generateDraft: (angleDescription, articleTitle, facts) =>
-    request('/draft', {
+  // ══════════════════════════════════════════════════════════════════
+  // STEP 4: Generate Title Recommendations (AI)
+  // ══════════════════════════════════════════════════════════════════
+
+  /**
+   * Generate title recommendations dari angle
+   * @param {string} angleTitle - Judul angle
+   * @param {string} angleHook - Hook angle
+   * @param {Array} facts - Fakta dari step 2
+   * @returns {Promise<{titles: Array}>}
+   */
+  generateTitles: async (angleTitle, angleHook, facts) => {
+    const response = await request('/ai/generate-titles', {
       method: 'POST',
       body: JSON.stringify({
-        angle_description: angleDescription,
+        angle_title: angleTitle,
+        angle_hook: angleHook,
+        facts,
+      }),
+    });
+    return response.data || response;
+  },
+
+  // ══════════════════════════════════════════════════════════════════
+  // STEP 5: Draft Generation (AI)
+  // ══════════════════════════════════════════════════════════════════
+
+  /**
+   * Generate draft artikel berlabel [FACT/CONTEXT/OPINI]
+   * @param {string} angleTitle - Judul angle yang dipilih
+   * @param {string} articleTitle - Judul artikel final
+   * @param {Array} facts - Fakta dari step 2
+   * @returns {Promise<{content: string, paragraphs: Array, word_count: number}>}
+   */
+  generateDraft: async (angleTitle, articleTitle, facts) => {
+    const response = await request('/ai/generate-draft', {
+      method: 'POST',
+      body: JSON.stringify({
+        angle_title: angleTitle,
         article_title: articleTitle,
         facts,
       }),
-    }),
-};
+    });
+    return response.data || response;
+  },
 
+  // ══════════════════════════════════════════════════════════════════
+  // STEP 6: Grounding Check (AI)
+  // ══════════════════════════════════════════════════════════════════
+
+  /**
+   * Verifikasi grounding score artikel vs fakta
+   * @param {string} draftContent - Isi draft artikel
+   * @param {Array} facts - Fakta dari step 2
+   * @returns {Promise<{grounding_score: number, total_claims: number, status: string}>}
+   */
+  checkGrounding: async (draftContent, facts) => {
+    const response = await request('/ai/grounding-check', {
+      method: 'POST',
+      body: JSON.stringify({
+        draft_content: draftContent,
+        facts,
+      }),
+    });
+    return response.data || response;
+  },
+};

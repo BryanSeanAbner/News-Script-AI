@@ -1,21 +1,32 @@
 """
-Serverless Function untuk AI Generation
-Menggabungkan logic dari backend steps (fact extraction, gap analysis, draft generation, grounding check)
+Serverless Function untuk AI Generation (Stateless)
+Setiap endpoint menerima data lengkap di request body, tidak ada session tracking
 """
 
 import json
 import os
 from http.server import BaseHTTPRequestHandler
-from typing import Optional
+from typing import Optional, Dict, List
 import sys
 
-# Add path untuk import modules
+# Add path untuk import modules (Vercel serverless)
 sys.path.insert(0, '/var/task')
 
 # Multi-provider adapter
-from groq import Groq
-import google.generativeai as genai
-from openai import OpenAI
+try:
+    from groq import Groq
+except ImportError:
+    Groq = None
+
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
 
 
 class AIProvider:
@@ -26,17 +37,17 @@ class AIProvider:
         self.gemini_key = os.getenv('GEMINI_API_KEY', '')
         self.openrouter_key = os.getenv('OPENROUTER_API_KEY', '')
     
-    def generate(self, prompt: str, task: str = "default", max_tokens: int = 4096) -> Optional[str]:
+    def generate(self, prompt: str, task: str = "default", max_tokens: int = 4096) -> str:
         """Generate text menggunakan multi-provider fallback"""
         
         # Try Groq first
-        if self.groq_key:
+        if self.groq_key and Groq:
             try:
                 client = Groq(api_key=self.groq_key)
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=min(max_tokens, 4096),
+                    max_tokens=min(max_tokens, 8000),
                     temperature=0.3
                 )
                 return response.choices[0].message.content
@@ -44,17 +55,17 @@ class AIProvider:
                 print(f"Groq failed: {e}")
         
         # Fallback ke Gemini
-        if self.gemini_key:
+        if self.gemini_key and genai:
             try:
                 genai.configure(api_key=self.gemini_key)
-                model = genai.GenerativeModel("gemini-2.5-flash")
+                model = genai.GenerativeModel("gemini-2.0-flash-exp")
                 response = model.generate_content(prompt)
                 return response.text
             except Exception as e:
                 print(f"Gemini failed: {e}")
         
         # Fallback ke OpenRouter
-        if self.openrouter_key:
+        if self.openrouter_key and OpenAI:
             try:
                 client = OpenAI(
                     api_key=self.openrouter_key,
@@ -72,11 +83,25 @@ class AIProvider:
         raise Exception("Semua AI providers gagal. Pastikan setidaknya satu API key tersedia.")
 
 
-def extract_facts(article_text: str) -> dict:
+def extract_json(text: str) -> str:
+    """Extract JSON dari response yang mungkin berisi markdown"""
+    text = text.strip()
+    if "```json" in text:
+        text = text.split("```json")[1].split("```")[0]
+    elif "```" in text:
+        text = text.split("```")[1].split("```")[0]
+    return text.strip()
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# STEP 2: Fact Extraction
+# ══════════════════════════════════════════════════════════════════════════
+
+def extract_facts(article_text: str) -> Dict:
     """Extract facts dari artikel"""
     provider = AIProvider()
     
-    prompt = f"""Analisis artikel berikut dan ekstrak faktanya sebagai JSON:
+    prompt = f"""Analisis artikel berikut dan ekstrak faktanya sebagai JSON.
 
 Artikel:
 {article_text}
@@ -84,105 +109,290 @@ Artikel:
 Berikan respons HANYA sebagai JSON (tanpa markdown), dengan format:
 {{
     "facts": [
-        {{"id": "fact_1", "text": "...", "source": "..."}},
-        {{"id": "fact_2", "text": "...", "source": "..."}}
+        {{"id": "fact_1", "text": "Fakta yang diekstrak", "source": "referensi"}},
+        {{"id": "fact_2", "text": "Fakta lain", "source": "referensi"}}
     ],
-    "total_facts": 2
+    "total_facts": 2,
+    "summary": "Ringkasan singkat artikel"
 }}"""
     
     result_text = provider.generate(prompt, task="fact_extraction", max_tokens=2048)
     
-    # Parse JSON response
     try:
-        # Handle potential markdown code blocks
-        if "```json" in result_text:
-            result_text = result_text.split("```json")[1].split("```")[0]
-        elif "```" in result_text:
-            result_text = result_text.split("```")[1].split("```")[0]
-        
-        return json.loads(result_text.strip())
+        return json.loads(extract_json(result_text))
     except json.JSONDecodeError:
-        return {"facts": [], "total_facts": 0, "raw_response": result_text}
+        return {"facts": [], "total_facts": 0, "summary": "", "raw_response": result_text}
 
 
-def generate_gap_analysis(article_text: str, facts: list) -> dict:
-    """Analisis gap dan generate angles"""
+# ══════════════════════════════════════════════════════════════════════════
+# STEP 3: Gap Analysis & Angle Mapping
+# ══════════════════════════════════════════════════════════════════════════
+
+def generate_gap_analysis(article_text: str, facts: List[Dict]) -> Dict:
+    """Analisis gap dan generate 3 angles"""
     provider = AIProvider()
     
     facts_text = "\n".join([f"- {f['text']}" for f in facts])
     
-    prompt = f"""Berdasarkan artikel dan fakta berikut, identifikasi gap dan buat 3 sudut pandang (angle):
+    prompt = f"""Berdasarkan artikel dan fakta berikut, identifikasi gap editorial dan buat 3 sudut pandang (angle) berita yang berbeda.
 
 Artikel:
 {article_text}
 
-Fakta yang ada:
+Fakta yang tersedia:
 {facts_text}
 
 Berikan respons HANYA sebagai JSON:
 {{
-    "gaps": ["gap_1", "gap_2"],
+    "gaps": [
+        {{"id": "gap_1", "title": "Gap Editorial", "description": "Penjelasan gap", "gap_type": "missing_context"}},
+        {{"id": "gap_2", "title": "Gap lain", "description": "Penjelasan", "gap_type": "bias"}}
+    ],
     "angles": [
-        {{"id": "angle_1", "title": "...", "description": "..."}},
-        {{"id": "angle_2", "title": "...", "description": "..."}},
-        {{"id": "angle_3", "title": "...", "description": "..."}}
-    ]
+        {{
+            "id": "angle_1",
+            "angle_title": "Judul Angle 1",
+            "angle_hook": "Hook menarik untuk angle ini",
+            "angle_type": "investigative",
+            "tone": "serious",
+            "target_audience": "general_public",
+            "estimated_word_count": 800
+        }},
+        {{
+            "id": "angle_2",
+            "angle_title": "Judul Angle 2",
+            "angle_hook": "Hook berbeda",
+            "angle_type": "human_interest",
+            "tone": "empathetic",
+            "target_audience": "general_public",
+            "estimated_word_count": 700
+        }},
+        {{
+            "id": "angle_3",
+            "angle_title": "Judul Angle 3",
+            "angle_hook": "Hook ketiga",
+            "angle_type": "analytical",
+            "tone": "objective",
+            "target_audience": "educated_readers",
+            "estimated_word_count": 900
+        }}
+    ],
+    "analysis_notes": "Catatan singkat hasil analisis"
 }}"""
     
     result_text = provider.generate(prompt, task="gap_analysis", max_tokens=2048)
     
     try:
-        if "```json" in result_text:
-            result_text = result_text.split("```json")[1].split("```")[0]
-        elif "```" in result_text:
-            result_text = result_text.split("```")[1].split("```")[0]
-        
-        return json.loads(result_text.strip())
+        return json.loads(extract_json(result_text))
     except json.JSONDecodeError:
-        return {"gaps": [], "angles": [], "raw_response": result_text}
+        return {"gaps": [], "angles": [], "analysis_notes": "", "raw_response": result_text}
 
 
-def generate_draft(angle_description: str, article_title: str, facts: list) -> dict:
-    """Generate draft artikel"""
+# ══════════════════════════════════════════════════════════════════════════
+# STEP 4: Generate Title Recommendations
+# ══════════════════════════════════════════════════════════════════════════
+
+def generate_titles(angle_title: str, angle_hook: str, facts: List[Dict]) -> Dict:
+    """Generate 5 rekomendasi judul dari angle"""
+    provider = AIProvider()
+    
+    facts_text = "\n".join([f"- {f['text']}" for f in facts[:10]])  # Top 10 facts only
+    
+    prompt = f"""Berdasarkan angle berita berikut, buatkan 5 rekomendasi judul artikel yang menarik dan SEO-friendly.
+
+Angle: {angle_title}
+Hook: {angle_hook}
+
+Fakta pendukung:
+{facts_text}
+
+Berikan respons HANYA sebagai JSON:
+{{
+    "titles": [
+        {{
+            "id": "title_1",
+            "text": "Judul Artikel yang Menarik dan SEO",
+            "style": "informative",
+            "seo_score": 0.9,
+            "char_count": 50,
+            "notes": "Catatan singkat kenapa judul ini bagus"
+        }},
+        {{"id": "title_2", "text": "Judul Kedua", "style": "provocative", "seo_score": 0.85, "char_count": 45, "notes": "..."}}
+    ]
+}}
+
+Buat 5 variasi judul dengan style berbeda: informative, provocative, analytical, empathetic, urgent."""
+    
+    result_text = provider.generate(prompt, task="title_generation", max_tokens=1024)
+    
+    try:
+        return json.loads(extract_json(result_text))
+    except json.JSONDecodeError:
+        return {"titles": [], "raw_response": result_text}
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# STEP 5: Draft Generation
+# ══════════════════════════════════════════════════════════════════════════
+
+def generate_draft(angle_title: str, article_title: str, facts: List[Dict]) -> Dict:
+    """Generate draft artikel berlabel [FACT/CONTEXT/OPINI]"""
     provider = AIProvider()
     
     facts_text = "\n".join([f"- {f['text']}" for f in facts])
     
-    prompt = f"""Tulis draft artikel berita berdasarkan:
+    prompt = f"""Tulis draft artikel berita investigatif dengan struktur berlabel.
 
 Judul: {article_title}
-Sudut Pandang: {angle_description}
-Fakta yang ada:
+Sudut Pandang: {angle_title}
+
+Fakta yang tersedia:
 {facts_text}
+
+Tulis artikel 600-800 kata dengan struktur:
+- Setiap paragraf diberi label [FACT], [CONTEXT], atau [OPINI]
+- [FACT]: Paragraf berisi fakta terverifikasi dari sumber
+- [CONTEXT]: Paragraf berisi konteks atau analisis (perlu validasi AI)
+- [OPINI]: Paragraf berisi opini atau spekulasi (perlu konfirmasi editor)
 
 Format respons sebagai JSON:
 {{
-    "content": "isi artikel dengan paragraf berlabel [FACT], [CONTEXT], [OPINI]",
-    "word_count": 500,
+    "content": "Isi artikel lengkap dengan paragraf berlabel",
     "paragraphs": [
-        {{"order": 1, "type": "FACT", "text": "..."}},
-        {{"order": 2, "type": "CONTEXT", "text": "..."}}
-    ]
+        {{
+            "order": 1,
+            "type": "FACT",
+            "text": "Paragraf pertama tanpa label di teks",
+            "source_fact_id": "fact_1",
+            "quote": "kutipan verbatim dari sumber (opsional)"
+        }},
+        {{
+            "order": 2,
+            "type": "CONTEXT",
+            "text": "Paragraf kedua",
+            "source_fact_id": null,
+            "quote": null
+        }}
+    ],
+    "word_count": 650,
+    "label_stats": {{
+        "FACT": 5,
+        "CONTEXT": 3,
+        "OPINI": 2
+    }}
 }}"""
     
     result_text = provider.generate(prompt, task="draft_generation", max_tokens=4096)
     
     try:
-        if "```json" in result_text:
-            result_text = result_text.split("```json")[1].split("```")[0]
-        elif "```" in result_text:
-            result_text = result_text.split("```")[1].split("```")[0]
-        
-        data = json.loads(result_text.strip())
+        data = json.loads(extract_json(result_text))
         if "word_count" not in data:
             data["word_count"] = len(data.get("content", "").split())
+        if "label_stats" not in data:
+            # Count from paragraphs
+            stats = {"FACT": 0, "CONTEXT": 0, "OPINI": 0}
+            for p in data.get("paragraphs", []):
+                t = p.get("type", "CONTEXT")
+                stats[t] = stats.get(t, 0) + 1
+            data["label_stats"] = stats
         return data
     except json.JSONDecodeError:
-        return {"content": result_text, "word_count": len(result_text.split()), "paragraphs": []}
+        # Fallback jika JSON gagal
+        word_count = len(result_text.split())
+        return {
+            "content": result_text,
+            "word_count": word_count,
+            "paragraphs": [],
+            "label_stats": {},
+            "raw_response": result_text
+        }
 
+
+# ══════════════════════════════════════════════════════════════════════════
+# STEP 6: Grounding Check
+# ══════════════════════════════════════════════════════════════════════════
+
+def check_grounding(draft_content: str, facts: List[Dict]) -> Dict:
+    """Verifikasi grounding score artikel vs fakta"""
+    provider = AIProvider()
+    
+    facts_text = "\n".join([f"[{f['id']}] {f['text']}" for f in facts])
+    
+    prompt = f"""Verifikasi setiap klaim dalam draft artikel berikut terhadap fakta yang tersedia.
+
+Draft Artikel:
+{draft_content}
+
+Fakta Referensi:
+{facts_text}
+
+Analisis setiap klaim dan berikan grounding score (0.0-1.0).
+
+Format respons sebagai JSON:
+{{
+    "grounding_score": 0.85,
+    "total_claims": 15,
+    "grounded_claims": 13,
+    "ungrounded_claims": [
+        {{
+            "claim_text": "Klaim yang tidak ter-ground",
+            "severity": "minor",
+            "suggestion": "Saran perbaikan"
+        }}
+    ],
+    "status": "PASS",
+    "recommendation": "Artikel lolos grounding check dengan skor 85%"
+}}
+
+Status: PASS (>80%), WARN (60-80%), FAIL (<60%)"""
+    
+    result_text = provider.generate(prompt, task="grounding_check", max_tokens=2048)
+    
+    try:
+        data = json.loads(extract_json(result_text))
+        # Ensure all required fields exist
+        if "grounding_score" not in data:
+            data["grounding_score"] = 0.0
+        if "status" not in data:
+            score = data["grounding_score"]
+            data["status"] = "PASS" if score > 0.8 else ("WARN" if score > 0.6 else "FAIL")
+        return data
+    except json.JSONDecodeError:
+        return {
+            "grounding_score": 0.0,
+            "total_claims": 0,
+            "grounded_claims": 0,
+            "ungrounded_claims": [],
+            "status": "ERROR",
+            "recommendation": "Gagal parsing grounding check",
+            "raw_response": result_text
+        }
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# HTTP Handler (Vercel Serverless)
+# ══════════════════════════════════════════════════════════════════════════
 
 class handler(BaseHTTPRequestHandler):
-    """Main serverless handler"""
+    """Main serverless handler untuk stateless endpoints"""
+    
+    def do_OPTIONS(self):
+        """Handle CORS preflight"""
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+    
+    def do_GET(self):
+        """Handle GET requests"""
+        if self.path == '/api/health':
+            self.send_json_response(200, {
+                "status": "ok",
+                "message": "Stateless serverless backend running"
+            })
+        else:
+            self.send_json_response(404, {"error": "Endpoint not found"})
     
     def do_POST(self):
         """Handle POST requests"""
@@ -198,23 +408,20 @@ class handler(BaseHTTPRequestHandler):
         path = self.path
         
         # Route handling
-        if path == '/api/facts':
-            self.handle_facts(req)
-        elif path == '/api/gap-analysis':
+        if path == '/api/ai/extract-facts':
+            self.handle_extract_facts(req)
+        elif path == '/api/ai/gap-analysis':
             self.handle_gap_analysis(req)
-        elif path == '/api/draft':
-            self.handle_draft(req)
+        elif path == '/api/ai/generate-titles':
+            self.handle_generate_titles(req)
+        elif path == '/api/ai/generate-draft':
+            self.handle_generate_draft(req)
+        elif path == '/api/ai/grounding-check':
+            self.handle_grounding_check(req)
         else:
-            self.send_json_response(404, {"error": "Endpoint not found"})
+            self.send_json_response(404, {"error": f"Endpoint not found: {path}"})
     
-    def do_GET(self):
-        """Handle GET requests"""
-        if self.path == '/api/health':
-            self.send_json_response(200, {"status": "ok", "message": "Serverless backend running"})
-        else:
-            self.send_json_response(404, {"error": "Endpoint not found"})
-    
-    def handle_facts(self, req):
+    def handle_extract_facts(self, req):
         """Handle fact extraction"""
         article_text = req.get('article_text', '')
         if not article_text:
@@ -232,8 +439,8 @@ class handler(BaseHTTPRequestHandler):
         article_text = req.get('article_text', '')
         facts = req.get('facts', [])
         
-        if not article_text or not facts:
-            self.send_json_response(400, {"error": "article_text and facts required"})
+        if not article_text:
+            self.send_json_response(400, {"error": "article_text required"})
             return
         
         try:
@@ -242,26 +449,59 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response(500, {"error": str(e)})
     
-    def handle_draft(self, req):
-        """Handle draft generation"""
-        angle_description = req.get('angle_description', '')
-        article_title = req.get('article_title', '')
+    def handle_generate_titles(self, req):
+        """Handle title generation"""
+        angle_title = req.get('angle_title', '')
+        angle_hook = req.get('angle_hook', '')
         facts = req.get('facts', [])
         
-        if not all([angle_description, article_title, facts]):
-            self.send_json_response(400, {"error": "angle_description, article_title, facts required"})
+        if not angle_title:
+            self.send_json_response(400, {"error": "angle_title required"})
             return
         
         try:
-            result = generate_draft(angle_description, article_title, facts)
+            result = generate_titles(angle_title, angle_hook, facts)
+            self.send_json_response(200, {"status": "ok", "data": result})
+        except Exception as e:
+            self.send_json_response(500, {"error": str(e)})
+    
+    def handle_generate_draft(self, req):
+        """Handle draft generation"""
+        angle_title = req.get('angle_title', '')
+        article_title = req.get('article_title', '')
+        facts = req.get('facts', [])
+        
+        if not article_title:
+            self.send_json_response(400, {"error": "article_title required"})
+            return
+        
+        try:
+            result = generate_draft(angle_title, article_title, facts)
+            self.send_json_response(200, {"status": "ok", "data": result})
+        except Exception as e:
+            self.send_json_response(500, {"error": str(e)})
+    
+    def handle_grounding_check(self, req):
+        """Handle grounding check"""
+        draft_content = req.get('draft_content', '')
+        facts = req.get('facts', [])
+        
+        if not draft_content:
+            self.send_json_response(400, {"error": "draft_content required"})
+            return
+        
+        try:
+            result = check_grounding(draft_content, facts)
             self.send_json_response(200, {"status": "ok", "data": result})
         except Exception as e:
             self.send_json_response(500, {"error": str(e)})
     
     def send_json_response(self, status_code, data):
-        """Send JSON response"""
+        """Send JSON response dengan CORS headers"""
         self.send_response(status_code)
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())

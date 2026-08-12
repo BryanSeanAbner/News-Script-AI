@@ -6,7 +6,7 @@ export function Badge({ variant = 'neutral', children }) {
 }
 
 // ── Step Badge (nomor step) ────────────────────────────────────────────────
-export function StepBadge({ step, total = 10 }) {
+export function StepBadge({ step, total = 8 }) {
   return <span className="step-badge">Step {step} / {total}</span>;
 }
 

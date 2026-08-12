@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { PageHeader, Alert, Badge, Spinner } from '../components/UI';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function Step5Page() {
   const { id } = useParams();
@@ -287,15 +288,16 @@ export default function Step5Page() {
 
       {/* ACTION BAR */}
       <div className="action-bar" style={{ marginTop: 'var(--space-6)' }}>
-        <button className="btn btn-secondary" onClick={() => navigate(`/session/${id}/step/3`)}>
-          ← Kembali ke Step 3
+        <button className="btn btn-secondary" onClick={() => navigate(`/session/${id}/step/3`)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <ArrowLeft size={16} /> Kembali ke Step 3
         </button>
         <button
           className="btn btn-primary btn-lg"
           onClick={handleConfirmAll}
           disabled={!selectedAngleId || (useCustomTitle ? !customTitle.trim() : !selectedTitleId) || isGeneratingTitles || isLoading || isRunning}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
         >
-          {isLoading || isRunning ? 'Menyimpan...' : 'Lanjut ke Step 5: Draft Generation →'}
+          {isLoading || isRunning ? 'Menyimpan...' : <><span>Lanjut ke Step 5: Draft Generation</span> <ArrowRight size={16} /></>}
         </button>
       </div>
     </div>

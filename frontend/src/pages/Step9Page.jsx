@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { PageHeader, Alert, GroundingScoreBar, Badge } from '../components/UI';
+import { Check, Edit2, MessageCircle, CornerUpLeft, RotateCcw, ArrowRight } from 'lucide-react';
 
 // Warna dan label per tipe paragraf
 const TYPE_META = {
@@ -18,13 +19,13 @@ const TYPE_META = {
   },
   CONTEXT: {
     label: 'CONTEXT',
-    hint: 'Konteks — perlu divalidasi',
+    hint: 'Konteks &mdash; perlu divalidasi',
     border: 'var(--color-accent-fg)',
     badge: 'info',
   },
   OPINI: {
     label: 'OPINI',
-    hint: 'Opini — perlu konfirmasi penulis',
+    hint: 'Opini &mdash; perlu konfirmasi penulis',
     border: 'var(--color-attention-fg)',
     badge: 'warn',
   },
@@ -187,10 +188,10 @@ export default function Step9Page() {
                           </div>
                           <button
                             className="btn btn-ghost btn-sm"
-                            style={{ fontSize: 'var(--text-xs)', padding: '2px 8px' }}
+                            style={{ fontSize: 'var(--text-xs)', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                             onClick={() => setEditingIdx(isEditing ? null : idx)}
                           >
-                            {isEditing ? '✓ Simpan' : '✏️ Edit'}
+                            {isEditing ? <><Check size={14} /> Simpan</> : <><Edit2 size={14} /> Edit</>}
                           </button>
                         </div>
 
@@ -236,8 +237,11 @@ export default function Step9Page() {
                             fontSize: 'var(--text-xs)',
                             color: 'var(--color-fg-muted)',
                             fontStyle: 'italic',
+                            display: 'flex',
+                            alignItems: 'start',
+                            gap: '6px'
                           }}>
-                            💬 Kutipan Asli: "{p.quote}"
+                            <MessageCircle size={14} style={{ marginTop: '2px', flexShrink: 0 }} /> Kutipan Asli: &ldquo;{p.quote}&rdquo;
                           </blockquote>
                         )}
                       </div>
@@ -282,8 +286,8 @@ export default function Step9Page() {
                     </>
                   )}
                   {editableParagraphs.filter(p => p.text !== draft?.paragraphs?.find((_, i2) => i2 === editableParagraphs.indexOf(p))?.text).length > 0 && (
-                    <span style={{ color: 'var(--color-attention-fg)', marginTop: 4 }}>
-                      ✏️ {editableParagraphs.length} paragraf diedit
+                    <span style={{ color: 'var(--color-attention-fg)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Edit2 size={12} /> {editableParagraphs.length} paragraf diedit
                     </span>
                   )}
                 </div>
@@ -309,7 +313,7 @@ export default function Step9Page() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 <button
                   className="btn btn-success btn-lg"
-                  style={{ justifyContent: 'center' }}
+                  style={{ justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   onClick={async () => {
                     clearError();
                     try {
@@ -336,21 +340,21 @@ export default function Step9Page() {
                   }}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Mempublish...' : '✓ Approve & Publish'}
+                  {isLoading ? 'Mempublish...' : <><Check size={18} /> Approve &amp; Publish</>}
                 </button>
                 <button
                   className={`btn btn-lg ${reviewStatus === 'revision_small' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ justifyContent: 'center' }}
+                  style={{ justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   onClick={() => setReviewStatus('revision_small')}
                 >
-                  ↩ Revisi Draft (Step 5)
+                  <CornerUpLeft size={18} /> Revisi Draft (Step 5)
                 </button>
                 <button
                   className={`btn btn-lg ${reviewStatus === 'revision_large' ? 'btn-danger' : 'btn-secondary'}`}
-                  style={{ justifyContent: 'center' }}
+                  style={{ justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   onClick={() => setReviewStatus('revision_large')}
                 >
-                  ⟳ Ganti Angle (Step 3)
+                  <RotateCcw size={18} /> Ganti Angle (Step 3)
                 </button>
               </div>
 
@@ -358,11 +362,11 @@ export default function Step9Page() {
                 <div style={{ marginTop: 'var(--space-4)' }}>
                   <button
                     className="btn btn-primary"
-                    style={{ width: '100%', justifyContent: 'center' }}
+                    style={{ width: '100%', justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     onClick={handleSubmit}
                     disabled={isLoading || !editorNotes.trim()}
                   >
-                    {isLoading ? 'Menyimpan...' : 'Konfirmasi Revisi →'}
+                    {isLoading ? 'Menyimpan...' : <><span>Konfirmasi Revisi</span> <ArrowRight size={16} /></>}
                   </button>
                 </div>
               )}

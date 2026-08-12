@@ -1,5 +1,5 @@
 ﻿/**
- * DashboardPage â€” Landing page utama
+ * DashboardPage &mdash; Landing page utama
  * Menampilkan statistik naskah dan daftar artikel yang telah dipublish
  */
 
@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { Badge, Spinner } from '../components/UI';
+import { FileText, CheckCircle, Settings, Newspaper, Pin, ArrowRight, X } from 'lucide-react';
 
 function StatCard({ icon, label, value, sub }) {
   return (
@@ -35,7 +36,9 @@ function ConfirmModal({ isOpen, title, children, onConfirm, onCancel, confirmTex
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{title}</h3>
-          <button className="modal-close" onClick={onCancel} aria-label="Tutup">Ã—</button>
+          <button className="modal-close" onClick={onCancel} aria-label="Tutup">
+            <X size={20} />
+          </button>
         </div>
         <div className="modal-body">
           {children}
@@ -62,7 +65,6 @@ function ArticleCard({ session, onClick, onDelete }) {
   const step4 = session?.data?.step_4;
   const step6 = session?.data?.step_6;
   
-  // Logic judul berdasarkan status
   const title = session.status === 'completed' 
     ? (step4?.selected_title || step6?.selected_title || step1?.title || 'Tanpa Judul')
     : (step1?.title || 'Tanpa Judul');
@@ -92,8 +94,8 @@ function ArticleCard({ session, onClick, onDelete }) {
           <h3 className="article-card-title">{title}</h3>
           {topic && (
             <div style={{ marginTop: 'var(--space-1)' }}>
-              <Badge variant="neutral" style={{ fontSize: 'var(--text-xs)' }}>
-                📌 {topic}
+              <Badge variant="neutral" style={{ fontSize: 'var(--text-xs)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Pin size={12} /> {topic}
               </Badge>
             </div>
           )}
@@ -148,8 +150,6 @@ export default function DashboardPage() {
   const published = sessions.filter(s => s.status === 'completed').length;
   const inProgress = sessions.filter(s => s.status === 'in_progress' || s.status === 'draft').length;
 
-  // Ambil session yang statusnya completed untuk artikel cards
-  // Diurutkan berdasarkan updated_at terbaru
   const publishedSessions = sessions
     .filter(s => s.status === 'completed')
     .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -177,7 +177,6 @@ export default function DashboardPage() {
       setDeleteModal({ isOpen: false, session: null });
     } catch (error) {
       console.error('Error deleting session:', error);
-      // Error sudah di-handle di store
     } finally {
       setIsDeleting(false);
     }
@@ -189,11 +188,10 @@ export default function DashboardPage() {
 
   return (
     <div className="page-container">
-      {/* Header */}
       <div className="dashboard-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Selamat datang di NewsScript AI â€” platform jurnalisme berbantuan AI</p>
+          <p className="page-subtitle">Selamat datang di NewsScript AI &mdash; platform jurnalisme berbantuan AI</p>
         </div>
         <button
           className="btn btn-primary btn-lg"
@@ -203,29 +201,27 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Stat Cards */}
       <div className="stat-grid">
         <StatCard
-          icon="ðŸ“„"
+          icon={<FileText size={24} />}
           label="Total Naskah"
-          value={isLoading ? 'â€”' : total}
+          value={isLoading ? '—' : total}
           sub={lastCreated ? `Terakhir: ${lastCreated}` : 'Belum ada naskah'}
         />
         <StatCard
-          icon="âœ…"
+          icon={<CheckCircle size={24} />}
           label="Dipublish"
-          value={isLoading ? 'â€”' : published}
-          sub={total > 0 ? `${Math.round((published / total) * 100)}% dari total` : 'â€”'}
+          value={isLoading ? '—' : published}
+          sub={total > 0 ? `${Math.round((published / total) * 100)}% dari total` : '—'}
         />
         <StatCard
-          icon="âš™ï¸"
+          icon={<Settings size={24} />}
           label="Sedang Diproses"
-          value={isLoading ? 'â€”' : inProgress}
+          value={isLoading ? '—' : inProgress}
           sub={inProgress > 0 ? 'Lanjutkan pengerjaan' : 'Tidak ada draft aktif'}
         />
       </div>
 
-      {/* Recent Articles */}
       <div className="section-header">
         <h2 className="section-title">Naskah Terbaru</h2>
         <div className="filter-tabs">
@@ -247,7 +243,9 @@ export default function DashboardPage() {
         </div>
       ) : filteredSessions.length === 0 ? (
         <div className="dashboard-empty">
-          <div className="dashboard-empty-icon">ðŸ“°</div>
+          <div className="dashboard-empty-icon">
+            <Newspaper size={48} />
+          </div>
           <h3>Belum ada naskah</h3>
           <p>Mulai buat naskah pertama Anda dengan pipeline AI kami</p>
           <button className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }} onClick={() => navigate('/new')}>
@@ -267,7 +265,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Quick Actions (hanya jika ada draft in-progress) */}
       {inProgress > 0 && (
         <div className="quick-actions-banner">
           <div>
@@ -279,13 +276,13 @@ export default function DashboardPage() {
               setFilter('in_progress');
               window.scrollTo({ top: 300, behavior: 'smooth' });
             }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
-            Lihat Draft â†’
+            Lihat Draft <ArrowRight size={16} />
           </button>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={deleteModal.isOpen}
         title="Hapus Naskah"
@@ -295,12 +292,12 @@ export default function DashboardPage() {
         isDestructive={true}
       >
         <p>
-          Apakah Anda yakin ingin menghapus naskah <strong>"{
+          Apakah Anda yakin ingin menghapus naskah <strong>&ldquo;{
             deleteModal.session?.data?.step_4?.selected_title || 
             deleteModal.session?.data?.step_6?.selected_title || 
             deleteModal.session?.data?.step_1?.title || 
             'Tanpa Judul'
-          }"</strong>?
+          }&rdquo;</strong>?
         </p>
         <p style={{ color: 'var(--color-danger-fg)', fontSize: 'var(--text-sm)', marginTop: 'var(--space-2)' }}>
           Tindakan ini tidak dapat dibatalkan.
@@ -309,4 +306,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { Spinner, Badge } from '../components/UI';
+import { ArrowLeft, Edit2, FileText, Clipboard, Check, Circle, MessageCircle, X } from 'lucide-react';
 
 // Warna dan label per tipe paragraf (sama seperti di Step9Page)
 const TYPE_META = {
@@ -13,13 +14,13 @@ const TYPE_META = {
   },
   CONTEXT: {
     label: 'CONTEXT',
-    hint: 'Konteks — perlu divalidasi',
+    hint: 'Konteks &mdash; perlu divalidasi',
     border: 'var(--color-accent-fg)',
     badge: 'info',
   },
   OPINI: {
     label: 'OPINI',
-    hint: 'Opini — perlu konfirmasi penulis',
+    hint: 'Opini &mdash; perlu konfirmasi penulis',
     border: 'var(--color-attention-fg)',
     badge: 'warn',
   },
@@ -65,14 +66,10 @@ export default function ArticleDetailPage() {
   const step7 = currentSession?.data?.step_7;
   const step8 = currentSession?.data?.step_8;
 
-  // Logic judul berdasarkan status:
-  // - Published/Completed: gunakan judul yang dipilih (step_4 atau step_6 selected_title)
-  // - Draft/In Progress: gunakan judul input awal (step_1.title)
   const title = currentSession.status === 'completed' 
     ? (step4?.selected_title || step6?.selected_title || step1?.title || 'Tanpa Judul')
     : (step1?.title || 'Tanpa Judul');
 
-  // Cari content dari berbagai step (tergantung progress)
   let content = '';
   let source = '';
   
@@ -93,11 +90,9 @@ export default function ArticleDetailPage() {
   const facts = step8?.pipeline_summary?.total_facts_extracted || step2?.total_facts || 0;
 
   const handleEdit = () => {
-    // Langsung ke Step 7 (Editorial Review) untuk edit
     navigate(`/session/${id}/step/7`);
   };
 
-  // Fungsi copy full text
   const copyFullText = async () => {
     const fullText = `${title}\n\n${content}`;
     try {
@@ -109,7 +104,6 @@ export default function ArticleDetailPage() {
     }
   };
 
-  // Generate plain text version (tanpa label) untuk copy
   const getPlainText = () => {
     if (step5?.paragraphs || step8?.paragraphs) {
       const paragraphs = step5?.paragraphs || step8?.paragraphs || [];
@@ -122,8 +116,8 @@ export default function ArticleDetailPage() {
     <div className="article-detail-page">
       <div className="article-detail-header">
         <div className="breadcrumb">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
-            ← Dashboard
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <ArrowLeft size={16} /> Dashboard
           </button>
           <span>/</span>
           <span>Naskah Berita</span>
@@ -137,9 +131,12 @@ export default function ArticleDetailPage() {
             <div className="article-meta">
               <span className="meta-item" style={{
                 color: currentSession.status === 'completed' ? 'var(--color-success-fg)' : 'var(--color-fg-muted)',
-                fontWeight: currentSession.status === 'completed' ? 'var(--font-semibold)' : 'normal'
+                fontWeight: currentSession.status === 'completed' ? 'var(--font-semibold)' : 'normal',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
               }}>
-                {currentSession.status === 'completed' ? '✓ Dipublish' : '◌ Draft'}
+                {currentSession.status === 'completed' ? <><Check size={14} /> Dipublish</> : <><Circle size={14} /> Draft</>}
               </span>
               {wordCount > 0 && <span className="meta-item">{wordCount.toLocaleString()} kata</span>}
               {currentSession.updated_at && (
@@ -151,8 +148,8 @@ export default function ArticleDetailPage() {
               )}
             </div>
           </div>
-          <button className="btn btn-primary" onClick={handleEdit}>
-            ✎ Edit Naskah
+          <button className="btn btn-primary" onClick={handleEdit} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Edit2 size={16} /> Edit Naskah
           </button>
         </div>
 
@@ -219,14 +216,12 @@ export default function ArticleDetailPage() {
                   fontSize: 'var(--text-sm)'
                 }}
               >
-                📄 Lihat Full Text
+                <FileText size={16} /> Lihat Full Text
               </button>
             </div>
 
-            {/* Jika ada paragraphs berlabel, tampilkan dengan label */}
             {(step5?.paragraphs || step8?.paragraphs) ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                {/* Legend */}
                 <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-2)', flexWrap: 'wrap' }}>
                   {Object.entries(TYPE_META).map(([type, meta]) => (
                     <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
@@ -237,7 +232,6 @@ export default function ArticleDetailPage() {
                   ))}
                 </div>
 
-                {/* Paragraf berlabel */}
                 {(step5?.paragraphs || step8?.paragraphs || []).map((p, idx) => {
                   const type = p.type || 'CONTEXT';
                   const meta = TYPE_META[type] || TYPE_META.CONTEXT;
@@ -252,7 +246,6 @@ export default function ArticleDetailPage() {
                         backgroundColor: 'var(--color-canvas-subtle)',
                       }}
                     >
-                      {/* Header baris */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
                         <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                           <Badge variant={meta.badge}>[{meta.label}]</Badge>
@@ -263,7 +256,6 @@ export default function ArticleDetailPage() {
                         </div>
                       </div>
 
-                      {/* Teks paragraf */}
                       <p style={{
                         fontSize: 'var(--text-base)',
                         lineHeight: 'var(--leading-relaxed)',
@@ -274,7 +266,6 @@ export default function ArticleDetailPage() {
                         {p.text}
                       </p>
 
-                      {/* Kutipan verbatim (hanya FACT) */}
                       {p.quote && (
                         <blockquote style={{
                           margin: 0,
@@ -284,8 +275,11 @@ export default function ArticleDetailPage() {
                           fontSize: 'var(--text-xs)',
                           color: 'var(--color-fg-muted)',
                           fontStyle: 'italic',
+                          display: 'flex',
+                          alignItems: 'start',
+                          gap: '6px'
                         }}>
-                          💬 Kutipan Asli: "{p.quote}"
+                          <MessageCircle size={14} style={{ marginTop: '2px', flexShrink: 0 }} /> Kutipan Asli: &ldquo;{p.quote}&rdquo;
                         </blockquote>
                       )}
                     </div>
@@ -293,18 +287,16 @@ export default function ArticleDetailPage() {
                 })}
               </div>
             ) : (
-              /* Fallback: tampilkan konten biasa tanpa label */
               <div className="article-content" style={{
                 fontSize: 'var(--text-base)',
                 lineHeight: 'var(--leading-relaxed)',
                 color: 'var(--color-fg-default)',
-                whiteSpace: 'pre-wrap'  // Preserve formatting
+                whiteSpace: 'pre-wrap'
               }}>
                 {content.split('\n\n').map((paragraph, idx) => {
                   const trimmed = paragraph.trim();
                   if (!trimmed) return null;
                   
-                  // Handle sections/headings (if they exist)
                   if (trimmed.match(/^#+\s/)) {
                     return (
                       <h4 key={idx} style={{
@@ -319,7 +311,6 @@ export default function ArticleDetailPage() {
                     );
                   }
                   
-                  // Handle quotes
                   if (trimmed.startsWith('*"') && trimmed.endsWith('"*')) {
                     return (
                       <blockquote key={idx} style={{
@@ -335,7 +326,6 @@ export default function ArticleDetailPage() {
                     );
                   }
                   
-                  // Regular paragraph
                   return (
                     <p key={idx} style={{ 
                       marginBottom: 'var(--space-4)',
@@ -347,7 +337,6 @@ export default function ArticleDetailPage() {
                   );
                 })}
                 
-                {/* Show raw content for debugging if needed */}
                 {source === 'Draft Content' && (
                   <details style={{ marginTop: 'var(--space-6)', fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)' }}>
                     <summary style={{ cursor: 'pointer', marginBottom: 'var(--space-2)' }}>Debug: Lihat raw content</summary>
@@ -393,15 +382,14 @@ export default function ArticleDetailPage() {
       </div>
 
       <div className="article-footer">
-        <button className="btn btn-ghost" onClick={() => navigate('/')}>
-          ← Kembali ke Dashboard
+        <button className="btn btn-ghost" onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <ArrowLeft size={16} /> Kembali ke Dashboard
         </button>
-        <button className="btn btn-primary" onClick={handleEdit}>
-          ✎ Edit Naskah
+        <button className="btn btn-primary" onClick={handleEdit} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <Edit2 size={16} /> Edit Naskah
         </button>
       </div>
 
-      {/* Modal Full Text */}
       {showFullTextModal && (
         <div style={{
           position: 'fixed',
@@ -426,7 +414,6 @@ export default function ArticleDetailPage() {
             flexDirection: 'column',
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
           }}>
-            {/* Modal Header */}
             <div style={{
               padding: 'var(--space-4) var(--space-6)',
               borderBottom: '1px solid var(--color-border-default)',
@@ -462,19 +449,18 @@ export default function ArticleDetailPage() {
                     color: copySuccess ? 'white' : undefined
                   }}
                 >
-                  {copySuccess ? '✓ Copied!' : '📋 Copy'}
+                  {copySuccess ? <><Check size={16} /> Copied!</> : <><Clipboard size={16} /> Copy</>}
                 </button>
                 <button
                   className="btn btn-ghost btn-sm"
                   onClick={() => setShowFullTextModal(false)}
                   style={{ padding: '4px 8px', minWidth: 'unset' }}
                 >
-                  ✕
+                  <X size={20} />
                 </button>
               </div>
             </div>
 
-            {/* Modal Body */}
             <div style={{
               padding: 'var(--space-6)',
               overflow: 'auto',
@@ -499,7 +485,6 @@ export default function ArticleDetailPage() {
                 {getPlainText()}
               </div>
 
-              {/* Stats */}
               <div style={{ 
                 marginTop: 'var(--space-6)',
                 paddingTop: 'var(--space-4)',

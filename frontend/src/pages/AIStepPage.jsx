@@ -9,6 +9,7 @@ import {
   PageHeader, Alert, StepCard, Badge, GroundingScoreBar,
   FactItem, RunningState, Spinner
 } from '../components/UI';
+import { ArrowRight, MessageCircle, Check, X, AlertTriangle, ArrowLeft } from 'lucide-react';
 
 // ── Config per step (8-step pipeline) ──────────────────────────────────────
 const STEP_CONFIG = {
@@ -17,28 +18,28 @@ const STEP_CONFIG = {
     subtitle: 'Groq Cloud (Llama 3.3 70B) mengekstrak fakta terstruktur dari artikel referensi',
     model: 'Groq (Llama 3.3 70B)',
     nextStep: 3,
-    nextLabel: 'Lanjut ke Gap Analysis →',
+    nextLabel: 'Lanjut ke Gap Analysis',
   },
   3: {
     title: 'Gap Analysis',
     subtitle: 'Groq Cloud (Llama 3.3 70B) mengidentifikasi gap editorial dari artikel referensi',
     model: 'Groq (Llama 3.3 70B)',
     nextStep: 4,
-    nextLabel: 'Pilih Angle & Judul →',
+    nextLabel: 'Pilih Angle & Judul',
   },
   5: {
     title: 'Draft Generation',
     subtitle: 'Groq Cloud (Llama 3.3 70B) menulis draft artikel investigatif ber-label [FACT/CONTEXT/OPINI]',
     model: 'Groq (Llama 3.3 70B)',
     nextStep: 6,
-    nextLabel: 'Lanjut ke Grounding Check →',
+    nextLabel: 'Lanjut ke Grounding Check',
   },
   6: {
     title: 'Grounding Check',
     subtitle: 'Groq Cloud (Llama 3.3 70B) memverifikasi setiap klaim draft vs fakta',
     model: 'Groq (Llama 3.3 70B)',
     nextStep: 7,
-    nextLabel: 'Lanjut ke Editorial Review →',
+    nextLabel: 'Lanjut ke Editorial Review',
   },
 };
 
@@ -51,7 +52,7 @@ export default function AIStepPage() {
     subtitle: 'Processing...',
     model: 'Groq (Llama 3.3 70B)',
     nextStep: step + 1,
-    nextLabel: 'Lanjut →'
+    nextLabel: 'Lanjut'
   };
 
   const { loadSession, runStep, currentSession, isRunning, error, clearError, getStepData, getStepStatus } = useSessionStore();
@@ -276,9 +277,12 @@ export default function AIStepPage() {
                           borderLeft: '2px solid var(--color-border-default)',
                           fontSize: 'var(--text-xs)',
                           color: 'var(--color-fg-muted)',
-                          fontStyle: 'italic'
+                          fontStyle: 'italic',
+                          display: 'flex',
+                          alignItems: 'start',
+                          gap: '6px'
                         }}>
-                          💬 Kutipan Asli: "{p.quote}"
+                          <MessageCircle size={14} style={{ marginTop: '2px', flexShrink: 0 }} /> Kutipan Asli: &ldquo;{p.quote}&rdquo;
                         </blockquote>
                       )}
                     </div>
@@ -375,8 +379,8 @@ export default function AIStepPage() {
                 <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                   {stepData.claim_evidence_map.slice(0, 5).map((item, i) => (
                     <div key={i} style={{ padding: 'var(--space-2)', background: 'var(--color-canvas-default)', borderRadius: 'var(--radius-sm)', borderLeft: `2px solid ${item.is_grounded ? 'var(--color-success-fg)' : 'var(--color-danger-fg)'}` }}>
-                      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                        {item.is_grounded ? '✓' : '✗'} {item.claim_text?.slice(0, 80)}...
+                      <div style={{ fontWeight: '500', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {item.is_grounded ? <Check size={14} /> : <X size={14} />} {item.claim_text?.slice(0, 80)}...
                       </div>
                       {item.supporting_fact_ids?.length > 0 && (
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)' }}>
@@ -404,8 +408,8 @@ export default function AIStepPage() {
             )}
 
             {stepData.trigger_loop === 'LOOP_SMALL' && (
-              <Alert type="warning" style={{ marginTop: 'var(--space-4)' }}>
-                ⚠️ Skor grounding terlalu rendah ({Math.round((stepData.grounding_score || 0) * 100)}%). Sistem akan otomatis mengulangi draft generation untuk perbaikan.
+              <Alert type="warning" style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={18} /> Skor grounding terlalu rendah ({Math.round((stepData.grounding_score || 0) * 100)}%). Sistem akan otomatis mengulangi draft generation untuk perbaikan.
               </Alert>
             )}
           </div>
@@ -415,9 +419,11 @@ export default function AIStepPage() {
       {/* Action bar */}
       {isDone && (
         <div className="action-bar">
-          <button className="btn btn-secondary" onClick={() => navigate(-1)}>← Kembali</button>
-          <button className="btn btn-primary btn-lg" onClick={handleNext}>
-            {step === 6 && stepData?.trigger_loop === 'LOOP_SMALL' ? 'Ulangi Draft Generation...' : config.nextLabel}
+          <button className="btn btn-secondary" onClick={() => navigate(-1)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <ArrowLeft size={16} /> Kembali
+          </button>
+          <button className="btn btn-primary btn-lg" onClick={handleNext} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            {step === 6 && stepData?.trigger_loop === 'LOOP_SMALL' ? 'Ulangi Draft Generation...' : <><span>{config.nextLabel}</span> <ArrowRight size={16} /></>}
           </button>
         </div>
       )}

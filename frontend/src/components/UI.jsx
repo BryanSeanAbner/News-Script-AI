@@ -97,21 +97,15 @@ export function PageHeader({ title, subtitle, actions }) {
 }
 
 // ── Fact Item ──────────────────────────────────────────────────────────────
-const categoryColors = {
-  who: 'info', what: 'neutral', when: 'warn', where: 'neutral',
-  why: 'human', how: 'neutral', statistic: 'pass', quote: 'neutral',
-};
-
 export function FactItem({ fact }) {
   return (
     <div className="fact-item">
       <div className="fact-item-header">
         <span className="fact-id">{fact.id}</span>
-        <Badge variant={categoryColors[fact.category] || 'neutral'}>{fact.category}</Badge>
       </div>
-      <div className="fact-claim">{fact.claim}</div>
-      {fact.source_sentence && (
-        <div className="fact-source">"{fact.source_sentence}"</div>
+      <div className="fact-claim">{fact.text}</div>
+      {fact.source && (
+        <div className="fact-source">{fact.source}</div>
       )}
     </div>
   );

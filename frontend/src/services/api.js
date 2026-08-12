@@ -42,7 +42,7 @@ export const api = {
    * @returns {Promise<{facts: Array, total_facts: number}>}
    */
   extractFacts: async (articleText) => {
-    const response = await request('/ai/extract-facts', {
+    const response = await request('/facts', {
       method: 'POST',
       body: JSON.stringify({ article_text: articleText }),
     });
@@ -60,7 +60,7 @@ export const api = {
    * @returns {Promise<{gaps: Array, angles: Array}>}
    */
   generateGapAnalysis: async (articleText, facts) => {
-    const response = await request('/ai/gap-analysis', {
+    const response = await request('/gap-analysis', {
       method: 'POST',
       body: JSON.stringify({ article_text: articleText, facts }),
     });
@@ -79,7 +79,7 @@ export const api = {
    * @returns {Promise<{titles: Array}>}
    */
   generateTitles: async (angleTitle, angleHook, facts) => {
-    const response = await request('/ai/generate-titles', {
+    const response = await request('/titles', {
       method: 'POST',
       body: JSON.stringify({
         angle_title: angleTitle,
@@ -102,7 +102,7 @@ export const api = {
    * @returns {Promise<{content: string, paragraphs: Array, word_count: number}>}
    */
   generateDraft: async (angleTitle, articleTitle, facts) => {
-    const response = await request('/ai/generate-draft', {
+    const response = await request('/draft', {
       method: 'POST',
       body: JSON.stringify({
         angle_title: angleTitle,
@@ -124,7 +124,7 @@ export const api = {
    * @returns {Promise<{grounding_score: number, total_claims: number, status: string}>}
    */
   checkGrounding: async (draftContent, facts) => {
-    const response = await request('/ai/grounding-check', {
+    const response = await request('/grounding', {
       method: 'POST',
       body: JSON.stringify({
         draft_content: draftContent,

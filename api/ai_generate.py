@@ -309,67 +309,6 @@ Format respons sebagai JSON:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# STEP 6: Grounding Check
-# ══════════════════════════════════════════════════════════════════════════
-
-def check_grounding(draft_content: str, facts: List[Dict]) -> Dict:
-    """Verifikasi grounding score artikel vs fakta"""
-    provider = AIProvider()
-    
-    facts_text = "\n".join([f"[{f['id']}] {f['text']}" for f in facts])
-    
-    prompt = f"""Verifikasi setiap klaim dalam draft artikel berikut terhadap fakta yang tersedia.
-
-Draft Artikel:
-{draft_content}
-
-Fakta Referensi:
-{facts_text}
-
-Analisis setiap klaim dan berikan grounding score (0.0-1.0).
-
-Format respons sebagai JSON:
-{{
-    "grounding_score": 0.85,
-    "total_claims": 15,
-    "grounded_claims": 13,
-    "ungrounded_claims": [
-        {{
-            "claim_text": "Klaim yang tidak ter-ground",
-            "severity": "minor",
-            "suggestion": "Saran perbaikan"
-        }}
-    ],
-    "status": "PASS",
-    "recommendation": "Artikel lolos grounding check dengan skor 85%"
-}}
-
-Status: PASS (>80%), WARN (60-80%), FAIL (<60%)"""
-    
-    result_text = provider.generate(prompt, task="grounding_check", max_tokens=2048)
-    
-    try:
-        data = json.loads(extract_json(result_text))
-        # Ensure all required fields exist
-        if "grounding_score" not in data:
-            data["grounding_score"] = 0.0
-        if "status" not in data:
-            score = data["grounding_score"]
-            data["status"] = "PASS" if score > 0.8 else ("WARN" if score > 0.6 else "FAIL")
-        return data
-    except json.JSONDecodeError:
-        return {
-            "grounding_score": 0.0,
-            "total_claims": 0,
-            "grounded_claims": 0,
-            "ungrounded_claims": [],
-            "status": "ERROR",
-            "recommendation": "Gagal parsing grounding check",
-            "raw_response": result_text
-        }
-
-
-# ══════════════════════════════════════════════════════════════════════════
 # HTTP Handler (Vercel Serverless)
 # ══════════════════════════════════════════════════════════════════════════
 
@@ -408,16 +347,12 @@ class handler(BaseHTTPRequestHandler):
         path = self.path
         
         # Route handling
-        if path == '/api/ai/extract-facts':
+        if path == '/api/facts':
             self.handle_extract_facts(req)
-        elif path == '/api/ai/gap-analysis':
+        elif path == '/api/gap-analysis':
             self.handle_gap_analysis(req)
-        elif path == '/api/ai/generate-titles':
-            self.handle_generate_titles(req)
-        elif path == '/api/ai/generate-draft':
+        elif path == '/api/draft':
             self.handle_generate_draft(req)
-        elif path == '/api/ai/grounding-check':
-            self.handle_grounding_check(req)
         else:
             self.send_json_response(404, {"error": f"Endpoint not found: {path}"})
     
@@ -449,22 +384,6 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response(500, {"error": str(e)})
     
-    def handle_generate_titles(self, req):
-        """Handle title generation"""
-        angle_title = req.get('angle_title', '')
-        angle_hook = req.get('angle_hook', '')
-        facts = req.get('facts', [])
-        
-        if not angle_title:
-            self.send_json_response(400, {"error": "angle_title required"})
-            return
-        
-        try:
-            result = generate_titles(angle_title, angle_hook, facts)
-            self.send_json_response(200, {"status": "ok", "data": result})
-        except Exception as e:
-            self.send_json_response(500, {"error": str(e)})
-    
     def handle_generate_draft(self, req):
         """Handle draft generation"""
         angle_title = req.get('angle_title', '')
@@ -477,21 +396,6 @@ class handler(BaseHTTPRequestHandler):
         
         try:
             result = generate_draft(angle_title, article_title, facts)
-            self.send_json_response(200, {"status": "ok", "data": result})
-        except Exception as e:
-            self.send_json_response(500, {"error": str(e)})
-    
-    def handle_grounding_check(self, req):
-        """Handle grounding check"""
-        draft_content = req.get('draft_content', '')
-        facts = req.get('facts', [])
-        
-        if not draft_content:
-            self.send_json_response(400, {"error": "draft_content required"})
-            return
-        
-        try:
-            result = check_grounding(draft_content, facts)
             self.send_json_response(200, {"status": "ok", "data": result})
         except Exception as e:
             self.send_json_response(500, {"error": str(e)})

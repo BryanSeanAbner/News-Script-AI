@@ -1,5 +1,5 @@
 /**
- * Step 1 — Editor Input Artikel (Simplified)
+ * Step 1 ï¿½ Editor Input Artikel (Simplified)
  */
 
 import { useState } from 'react';
@@ -56,7 +56,7 @@ export default function Step1Page() {
       {error && <Alert type="danger">{error}</Alert>}
 
       <Alert type="human">
-        <strong>Human Gate</strong> — Langkah ini memerlukan input manual dari editor.
+        <strong>Human Gate</strong> ï¿½ Langkah ini memerlukan input manual dari editor.
         Tidak ada AI yang terlibat di tahap ini.
       </Alert>
 
@@ -126,7 +126,7 @@ export default function Step1Page() {
             className="btn btn-primary btn-lg"
             disabled={isLoading}
           >
-            {isLoading ? 'Memproses...' : 'Mulai Analisis ?'}
+            {isLoading ? 'Memproses...' : 'Mulai Analisis'}
           </button>
         </div>
       </form>

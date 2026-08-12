@@ -1,5 +1,5 @@
-/**
- * DashboardPage — Landing page utama
+﻿/**
+ * DashboardPage â€” Landing page utama
  * Menampilkan statistik naskah dan daftar artikel yang telah dipublish
  */
 
@@ -35,7 +35,7 @@ function ConfirmModal({ isOpen, title, children, onConfirm, onCancel, confirmTex
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{title}</h3>
-          <button className="modal-close" onClick={onCancel} aria-label="Tutup">×</button>
+          <button className="modal-close" onClick={onCancel} aria-label="Tutup">Ã—</button>
         </div>
         <div className="modal-body">
           {children}
@@ -62,15 +62,13 @@ function ArticleCard({ session, onClick, onDelete }) {
   const step4 = session?.data?.step_4;
   const step6 = session?.data?.step_6;
   
-  // Logic judul berdasarkan status:
-  // - Published/Completed: gunakan judul yang dipilih (step_4 atau step_6 selected_title)
-  // - Draft/In Progress: gunakan judul input awal (step_1.title)
+  // Logic judul berdasarkan status
   const title = session.status === 'completed' 
     ? (step4?.selected_title || step6?.selected_title || step1?.title || 'Tanpa Judul')
     : (step1?.title || 'Tanpa Judul');
     
+  const topic = step1?.metadata?.topic || step8?.publication_meta?.topic || '';
   const excerpt = step8?.article?.excerpt || '';
-  const content = step8?.article?.content || '';
   const wordCount = step8?.article?.word_count || 0;
   const grounding = step8?.pipeline_summary?.final_grounding_score || 0;
   const facts = step8?.pipeline_summary?.total_facts_extracted || 0;
@@ -90,7 +88,16 @@ function ArticleCard({ session, onClick, onDelete }) {
       onKeyDown={e => e.key === 'Enter' && onClick()}
     >
       <div className="article-card-header">
-        <h3 className="article-card-title">{title}</h3>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 className="article-card-title">{title}</h3>
+          {topic && (
+            <div style={{ marginTop: 'var(--space-1)' }}>
+              <Badge variant="neutral" style={{ fontSize: 'var(--text-xs)' }}>
+                📌 {topic}
+              </Badge>
+            </div>
+          )}
+        </div>
         <div className="article-card-actions">
           <Badge variant={session.status === 'completed' ? 'pass' : session.status === 'in_progress' ? 'info' : 'neutral'}>
             {session.status === 'completed' ? 'Dipublish' : session.status === 'in_progress' ? 'Draft' : 'Pending'}
@@ -186,7 +193,7 @@ export default function DashboardPage() {
       <div className="dashboard-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Selamat datang di NewsScript AI — platform jurnalisme berbantuan AI</p>
+          <p className="page-subtitle">Selamat datang di NewsScript AI â€” platform jurnalisme berbantuan AI</p>
         </div>
         <button
           className="btn btn-primary btn-lg"
@@ -199,21 +206,21 @@ export default function DashboardPage() {
       {/* Stat Cards */}
       <div className="stat-grid">
         <StatCard
-          icon="📄"
+          icon="ðŸ“„"
           label="Total Naskah"
-          value={isLoading ? '—' : total}
+          value={isLoading ? 'â€”' : total}
           sub={lastCreated ? `Terakhir: ${lastCreated}` : 'Belum ada naskah'}
         />
         <StatCard
-          icon="✅"
+          icon="âœ…"
           label="Dipublish"
-          value={isLoading ? '—' : published}
-          sub={total > 0 ? `${Math.round((published / total) * 100)}% dari total` : '—'}
+          value={isLoading ? 'â€”' : published}
+          sub={total > 0 ? `${Math.round((published / total) * 100)}% dari total` : 'â€”'}
         />
         <StatCard
-          icon="⚙️"
+          icon="âš™ï¸"
           label="Sedang Diproses"
-          value={isLoading ? '—' : inProgress}
+          value={isLoading ? 'â€”' : inProgress}
           sub={inProgress > 0 ? 'Lanjutkan pengerjaan' : 'Tidak ada draft aktif'}
         />
       </div>
@@ -240,7 +247,7 @@ export default function DashboardPage() {
         </div>
       ) : filteredSessions.length === 0 ? (
         <div className="dashboard-empty">
-          <div className="dashboard-empty-icon">📰</div>
+          <div className="dashboard-empty-icon">ðŸ“°</div>
           <h3>Belum ada naskah</h3>
           <p>Mulai buat naskah pertama Anda dengan pipeline AI kami</p>
           <button className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }} onClick={() => navigate('/new')}>
@@ -273,7 +280,7 @@ export default function DashboardPage() {
               window.scrollTo({ top: 300, behavior: 'smooth' });
             }}
           >
-            Lihat Draft →
+            Lihat Draft â†’
           </button>
         </div>
       )}
@@ -302,3 +309,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

@@ -1,0 +1,76 @@
+﻿function ArticleCard({ session, onClick, onDelete }) {
+  const step8 = session?.data?.step_8;
+  const step1 = session?.data?.step_1;
+  const step4 = session?.data?.step_4;
+  const step6 = session?.data?.step_6;
+  
+  // Logic judul berdasarkan status
+  const title = session.status === 'completed' 
+    ? (step4?.selected_title || step6?.selected_title || step1?.title || 'Tanpa Judul')
+    : (step1?.title || 'Tanpa Judul');
+    
+  const topic = step1?.metadata?.topic || step8?.publication_meta?.topic || '';
+  const excerpt = step8?.article?.excerpt || '';
+  const wordCount = step8?.article?.word_count || 0;
+  const grounding = step8?.pipeline_summary?.final_grounding_score || 0;
+  const facts = step8?.pipeline_summary?.total_facts_extracted || 0;
+  const publishedAt = step8?.published_at || session?.updated_at;
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    onDelete(session);
+  };
+
+  return (
+    <div
+      className="article-card"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => e.key === 'Enter' && onClick()}
+    >
+      <div className="article-card-header">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 className="article-card-title">{title}</h3>
+          {topic && (
+            <div style={{ marginTop: 'var(--space-1)' }}>
+              <Badge variant="neutral" style={{ fontSize: 'var(--text-xs)' }}>
+                📌 {topic}
+              </Badge>
+            </div>
+          )}
+        </div>
+        <div className="article-card-actions">
+          <Badge variant={session.status === 'completed' ? 'pass' : session.status === 'in_progress' ? 'info' : 'neutral'}>
+            {session.status === 'completed' ? 'Dipublish' : session.status === 'in_progress' ? 'Draft' : 'Pending'}
+          </Badge>
+          <button
+            className="btn btn-ghost btn-sm article-delete-btn"
+            onClick={handleDelete}
+            title="Hapus naskah"
+            aria-label="Hapus naskah"
+          >
+            <DeleteIcon />
+          </button>
+        </div>
+      </div>
+      {excerpt && (
+        <p className="article-card-excerpt">{excerpt}</p>
+      )}
+      <div className="article-card-meta">
+        {wordCount > 0 && <span>{wordCount.toLocaleString()} kata</span>}
+        {grounding > 0 && (
+          <span style={{ color: 'var(--color-success-fg)' }}>
+            Grounding {Math.round(grounding * 100)}%
+          </span>
+        )}
+        {facts > 0 && <span>{facts} fakta</span>}
+        {publishedAt && (
+          <span>{new Date(publishedAt).toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'short', year: 'numeric'
+          })}</span>
+        )}
+      </div>
+    </div>
+  );
+}

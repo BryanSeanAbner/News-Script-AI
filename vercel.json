@@ -1,11 +1,5 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "pip install -r api/requirements.txt",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/ai_generate.py"
-    }
-  ]
+  "installCommand": "cd frontend && npm install"
 }

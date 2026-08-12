@@ -83,6 +83,9 @@ class AIProvider:
         raise Exception("Semua AI providers gagal. Pastikan setidaknya satu API key tersedia.")
 
 
+import re
+
+
 def extract_json(text: str) -> str:
     """Extract JSON dari response yang mungkin berisi markdown"""
     text = text.strip()
@@ -91,6 +94,86 @@ def extract_json(text: str) -> str:
     elif "```" in text:
         text = text.split("```")[1].split("```")[0]
     return text.strip()
+
+
+def parse_draft_with_labels(raw_text: str, facts: List[Dict]) -> Dict:
+    """
+    Fallback parser: Extract paragraphs dengan label [FACT], [CONTEXT], [OPINI]
+    dari raw text jika JSON parsing gagal
+    """
+    paragraphs = []
+    
+    # Split by double newline untuk dapat paragraf
+    blocks = raw_text.split('\n\n')
+    
+    order = 1
+    for block in blocks:
+        block = block.strip()
+        if not block or len(block) < 20:  # Skip paragraf terlalu pendek
+            continue
+        
+        # Detect label di awal paragraf
+        label_match = re.match(r'^\[?(FACT|CONTEXT|OPINI)\]?\s*:?\s*(.+)', block, re.IGNORECASE | re.DOTALL)
+        
+        if label_match:
+            para_type = label_match.group(1).upper()
+            para_text = label_match.group(2).strip()
+        else:
+            # Jika tidak ada label explicit, coba detect dari keywords
+            block_lower = block.lower()
+            if any(word in block_lower for word in ['menurut', 'kata', 'ungkap', 'jelas', 'data menunjukkan']):
+                para_type = 'FACT'
+            elif any(word in block_lower for word in ['seharusnya', 'mungkin', 'tampaknya', 'diduga', 'kemungkinan']):
+                para_type = 'OPINI'
+            else:
+                para_type = 'CONTEXT'
+            para_text = block
+        
+        # Remove label dari text jika masih ada
+        para_text = re.sub(r'^\[?(FACT|CONTEXT|OPINI)\]?\s*:?\s*', '', para_text, flags=re.IGNORECASE)
+        
+        # Detect quote (text dalam kutip ganda)
+        quote_match = re.search(r'"([^"]{20,200})"', para_text)
+        quote = quote_match.group(1) if quote_match else None
+        
+        # Try to match fact ID
+        source_fact_id = None
+        if para_type == 'FACT' and facts:
+            # Simple matching: cari fact yang punya overlap text
+            for fact in facts[:10]:  # Check top 10 facts
+                fact_text = fact.get('text', '').lower()
+                if fact_text and len(fact_text) > 20:
+                    # Check if ada substring match (minimal 20 chars)
+                    para_lower = para_text.lower()
+                    if any(fact_text[i:i+20] in para_lower for i in range(0, len(fact_text)-20, 10)):
+                        source_fact_id = fact.get('id')
+                        break
+        
+        paragraphs.append({
+            'order': order,
+            'type': para_type,
+            'text': para_text,
+            'source_fact_id': source_fact_id,
+            'quote': quote
+        })
+        order += 1
+    
+    # Build full content (tanpa label)
+    content = '\n\n'.join([p['text'] for p in paragraphs])
+    
+    # Calculate label stats
+    label_stats = {'FACT': 0, 'CONTEXT': 0, 'OPINI': 0}
+    for p in paragraphs:
+        t = p.get('type', 'CONTEXT')
+        label_stats[t] = label_stats.get(t, 0) + 1
+    
+    return {
+        'content': content,
+        'paragraphs': paragraphs,
+        'word_count': len(content.split()),
+        'label_stats': label_stats,
+        'parsed_via': 'fallback_regex'
+    }
 
 
 def generate_draft(angle_title: str, article_title: str, facts: List[Dict]) -> Dict:
@@ -112,6 +195,8 @@ Tulis artikel 600-800 kata dengan struktur:
 - [FACT]: Paragraf berisi fakta terverifikasi dari sumber
 - [CONTEXT]: Paragraf berisi konteks atau analisis (perlu validasi AI)
 - [OPINI]: Paragraf berisi opini atau spekulasi (perlu konfirmasi editor)
+
+PENTING: Respons harus berupa JSON lengkap dan valid. Jangan potong di tengah.
 
 Format respons sebagai JSON (tanpa markdown):
 {{
@@ -140,30 +225,55 @@ Format respons sebagai JSON (tanpa markdown):
     }}
 }}"""
     
-    result_text = provider.generate(prompt, max_tokens=4096)
+    result_text = provider.generate(prompt, max_tokens=8000)
     
     try:
         data = json.loads(extract_json(result_text))
+        
+        # Ensure word_count
         if "word_count" not in data:
             data["word_count"] = len(data.get("content", "").split())
-        if "label_stats" not in data:
-            # Count from paragraphs
+        
+        # Ensure label_stats dari paragraphs
+        if "label_stats" not in data and data.get("paragraphs"):
             stats = {"FACT": 0, "CONTEXT": 0, "OPINI": 0}
             for p in data.get("paragraphs", []):
                 t = p.get("type", "CONTEXT")
                 stats[t] = stats.get(t, 0) + 1
             data["label_stats"] = stats
+        
+        # Validate paragraphs structure
+        if not data.get("paragraphs") or len(data.get("paragraphs", [])) == 0:
+            # JSON ada tapi paragraphs kosong, coba parse ulang
+            print("Warning: JSON parsed but paragraphs empty, using fallback parser")
+            return parse_draft_with_labels(result_text, facts)
+        
+        data["parsed_via"] = "json_success"
         return data
-    except json.JSONDecodeError:
-        # Fallback jika JSON gagal
-        word_count = len(result_text.split())
-        return {
-            "content": result_text,
-            "word_count": word_count,
-            "paragraphs": [],
-            "label_stats": {},
-            "raw_response": result_text
-        }
+        
+    except json.JSONDecodeError as e:
+        # JSON parsing gagal, gunakan fallback regex parser
+        print(f"JSON decode failed: {e}, using fallback parser")
+        
+        try:
+            return parse_draft_with_labels(result_text, facts)
+        except Exception as fallback_error:
+            # Last resort: return raw text dengan minimal structure
+            print(f"Fallback parser also failed: {fallback_error}")
+            return {
+                "content": result_text,
+                "word_count": len(result_text.split()),
+                "paragraphs": [{
+                    "order": 1,
+                    "type": "CONTEXT",
+                    "text": result_text,
+                    "source_fact_id": None,
+                    "quote": None
+                }],
+                "label_stats": {"FACT": 0, "CONTEXT": 1, "OPINI": 0},
+                "parsed_via": "emergency_fallback",
+                "raw_response": result_text
+            }
 
 
 class handler(BaseHTTPRequestHandler):

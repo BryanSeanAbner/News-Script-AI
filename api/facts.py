@@ -45,7 +45,7 @@ class AIProvider:
             try:
                 client = Groq(api_key=self.groq_key)
                 response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model="GPT OSS 120B",
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=min(max_tokens, 8000),
                     temperature=0.3

@@ -198,7 +198,7 @@ export default function DashboardPage() {
           onClick={() => navigate('/new')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
         >
-          + Buat Berita 5W+1H (3 Slide)
+          + Generate Naskah berdasarkan 5W+1H
         </button>
       </div>
 

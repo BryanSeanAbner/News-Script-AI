@@ -36,8 +36,7 @@ import {
 const SAMPLE_INTERVIEWS = [
   {
     label: 'Kasus Pasutri Banyuwangi (Sesuai Rumus 2026)',
-    speaker: 'Kompol Agus Tri, S.H.',
-    title: 'Kasat Reskrim Polresta Banyuwangi',
+    newsTitle: 'Pasutri Banyuwangi Ditangkap Terkait Penipuan Arisan Online Rp 1,2 Miliar',
     topic: 'Kriminal',
     text: `Kutipan wawancara Kasat Reskrim Polresta Banyuwangi, Kompol Agus Tri, S.H. di Mapolresta Banyuwangi, Rabu (9/9/2026):
 
@@ -49,8 +48,7 @@ Para tersangka kami jerat dengan Pasal 378 KUHP tentang Penipuan dan Pasal 372 K
   },
   {
     label: 'Penertiban Balap Liar Polda Metro',
-    speaker: 'Kombes Pol Ade Ary Syam Indradi',
-    title: 'Kabid Humas Polda Metro Jaya',
+    newsTitle: 'Polda Metro Bubarkan Balap Liar Casablanca dan Amankan 19 Pemuda',
     topic: 'Lalu Lintas',
     text: `Pernyataan resmi Kabid Humas Polda Metro Jaya, Kombes Pol Ade Ary Syam Indradi di Polda Metro Jaya, Selasa (8/9/2026):
 
@@ -70,10 +68,9 @@ export default function QuickNewsPage() {
   const [slide, setSlide] = useState(1);
 
   // ── State Slide 1 ──────────────────────────────────────────────────────────
-  const [rawText, setRawText] = useState('');
-  const [speakerName, setSpeakerName] = useState('');
-  const [speakerTitle, setSpeakerTitle] = useState('');
+  const [newsTitle, setNewsTitle] = useState('');
   const [topic, setTopic] = useState('Kriminal');
+  const [rawText, setRawText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [slide1Error, setSlide1Error] = useState(null);
 
@@ -96,17 +93,16 @@ export default function QuickNewsPage() {
 
   // ── Load Sample Template ──────────────────────────────────────────────────
   function loadSample(sample) {
+    setNewsTitle(sample.newsTitle || '');
+    setTopic(sample.topic || 'Kriminal');
     setRawText(sample.text);
-    setSpeakerName(sample.speaker);
-    setSpeakerTitle(sample.title);
-    setTopic(sample.topic);
     setSlide1Error(null);
   }
 
   // ── Handle Action Slide 1 -> Slide 2 (Analyze 5W+1H) ─────────────────────
   async function handleAnalyze() {
     if (!rawText.trim() || rawText.trim().length < 50) {
-      setSlide1Error('Mohon masukkan bahan wawancara/kutipan narasumber minimal 50 karakter.');
+      setSlide1Error('Mohon masukkan teks berita/bahan konten minimal 50 karakter.');
       return;
     }
     setSlide1Error(null);
@@ -115,16 +111,20 @@ export default function QuickNewsPage() {
     try {
       const res = await api.analyzeInterview({
         raw_text: rawText.trim(),
-        speaker_name: speakerName.trim(),
-        speaker_title: speakerTitle.trim(),
+        title: newsTitle.trim(),
         topic: topic.trim(),
       });
 
       setAnalysisResult(res);
 
-      // Default pilih judul pertama
-      if (res.titles && res.titles.length > 0) {
+      // Jika user sudah memasukkan judul di Slide 1, jadikan opsi aktif
+      if (newsTitle.trim()) {
+        setSelectedTitle(newsTitle.trim());
+        setCustomTitle(newsTitle.trim());
+        setUseCustomTitle(true);
+      } else if (res.titles && res.titles.length > 0) {
         setSelectedTitle(res.titles[0].text);
+        setUseCustomTitle(false);
       }
       if (res.angles && res.angles.length > 0) {
         setSelectedAngle(res.angles[0].title);
@@ -132,7 +132,7 @@ export default function QuickNewsPage() {
 
       setSlide(2);
     } catch (err) {
-      setSlide1Error(err.message || 'Gagal menganalisis wawancara narasumber.');
+      setSlide1Error(err.message || 'Gagal menganalisis 5W+1H.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -150,14 +150,15 @@ export default function QuickNewsPage() {
     setIsGenerating(true);
 
     try {
+      const extractedSpeaker = analysisResult?.quotes?.[0]?.speaker || analysisResult?.five_w_one_h?.who || '';
       const res = await api.generateQuickNews({
         raw_text: rawText.trim(),
         selected_title: finalTitle,
         selected_angle: selectedAngle,
         five_w_one_h: analysisResult?.five_w_one_h || {},
         quotes: analysisResult?.quotes || [],
-        speaker_name: speakerName.trim(),
-        speaker_title: speakerTitle.trim(),
+        speaker_name: extractedSpeaker,
+        speaker_title: '',
         topic: topic ? topic.trim() : '',
       });
 
@@ -176,7 +177,7 @@ export default function QuickNewsPage() {
 
       setSlide(3);
     } catch (err) {
-      setSlide2Error(err.message || 'Gagal membuat naskah berita 5W+1H.');
+      setSlide2Error(err.message || 'Gagal membuat naskah berita berdasarkan 5W+1H.');
     } finally {
       setIsGenerating(false);
     }
@@ -226,13 +227,14 @@ export default function QuickNewsPage() {
       ? fullTextContent
       : editableParagraphs.map(p => p.text).join('\n\n');
 
+    const extractedSpeaker = analysisResult?.quotes?.[0]?.speaker || analysisResult?.five_w_one_h?.who || '';
     const savedSession = saveQuickNewsSession({
       title: finalTitle,
       content: finalContent,
       rawText: rawText,
       topic: topic,
-      speakerName: speakerName,
-      speakerTitle: speakerTitle,
+      speakerName: extractedSpeaker,
+      speakerTitle: '',
       paragraphs: editableParagraphs,
       seoMetrics: { seoScore: 95 }
     });
@@ -256,10 +258,10 @@ export default function QuickNewsPage() {
           </span>
         </div>
         <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--color-fg-default)' }}>
-          Generator Naskah 5W+1H (3 Slide)
+          Generate Naskah berdasarkan 5W + 1H
         </h1>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-fg-muted)' }}>
-          Ubah kutipan narasumber, siaran pers, data wawancara, atau bahan teks apapun menjadi naskah terstruktur 5W+1H ber-H2 standar Google 2026.
+          Ubah kutipan narasumber, siaran pers, data wawancara, atau bahan teks apapun menjadi naskah terstruktur berdasarkan 5W+1H standar Google 2026.
         </p>
       </div>
 
@@ -291,7 +293,7 @@ export default function QuickNewsPage() {
             Slide 1
           </div>
           <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: slide === 1 ? 'var(--color-fg-default)' : 'var(--color-fg-muted)' }}>
-            Input Kutipan Narsum
+            Input Judul & Teks Berita
           </div>
         </div>
 
@@ -335,13 +337,13 @@ export default function QuickNewsPage() {
             Slide 3
           </div>
           <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: slide === 3 ? 'var(--color-fg-default)' : 'var(--color-fg-muted)' }}>
-            Naskah 400 Kata & Review
+            Generate Naskah berdasarkan 5W + 1H
           </div>
         </div>
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════════ */}
-      {/* SLIDE 1: INPUT KUTIPAN / WAWANCARA NARSUM                              */}
+      {/* SLIDE 1: INPUT JUDUL & TEKS BERITA                                     */}
       {/* ════════════════════════════════════════════════════════════════════════ */}
       {slide === 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -373,39 +375,31 @@ export default function QuickNewsPage() {
           </div>
 
           <div className="card" style={{ padding: 'var(--space-5)' }}>
-            {/* Input Identitas Narsum Ringan */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+            {/* Input Judul Berita & Kategori Konten */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
               <div className="form-group">
-                <label className="form-label" htmlFor="speaker-name">Nama Narasumber / Penulis</label>
+                <label className="form-label" htmlFor="news-title">
+                  Judul Berita <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)', fontWeight: 'normal' }}>(Opsional / Awal)</span>
+                </label>
                 <input
-                  id="speaker-name"
+                  id="news-title"
                   type="text"
                   className="form-input"
-                  placeholder="cth: Kompol Agus Tri, Direktur PT X"
-                  value={speakerName}
-                  onChange={e => setSpeakerName(e.target.value)}
+                  placeholder="Ketik judul berita jika sudah ada, atau biarkan kosong untuk dibuatkan AI..."
+                  value={newsTitle}
+                  onChange={e => setNewsTitle(e.target.value)}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="speaker-title">Jabatan / Institusi</label>
-                <input
-                  id="speaker-title"
-                  type="text"
-                  className="form-input"
-                  placeholder="cth: Kasat Reskrim, CEO, Peneliti UI"
-                  value={speakerTitle}
-                  onChange={e => setSpeakerTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="topic-select">Topik / Kategori Konten</label>
+                <label className="form-label" htmlFor="topic-select">
+                  Topik / Kategori Konten <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)', fontWeight: 'normal' }}>(Opsional)</span>
+                </label>
                 <input
                   id="topic-select"
                   type="text"
                   className="form-input"
-                  placeholder="Kriminal, Kebijakan, Bisnis, Opini, dll."
+                  placeholder="cth: Kriminal, Kebijakan, Bisnis, Umum, dll."
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
                 />
@@ -415,7 +409,7 @@ export default function QuickNewsPage() {
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
                 <label className="form-label form-label-required" htmlFor="raw-interview" style={{ marginBottom: 0 }}>
-                  Bahan Teks: Kutipan / Transkrip / Siaran Pers / Data Apapun
+                  Teks Berita / Bahan Konten
                 </label>
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)' }}>
                   {rawText.trim().split(/\s+/).filter(Boolean).length} kata | {rawText.length} karakter
@@ -426,13 +420,13 @@ export default function QuickNewsPage() {
                 id="raw-interview"
                 className="form-input form-textarea"
                 rows={10}
-                placeholder={`Paste bahan teks di sini — bisa berupa:\n• Transkrip wawancara narasumber\n• Kutipan langsung pejabat/tokoh\n• Siaran pers / rilis resmi\n• Data lapangan / kronologi kejadian\n• Laporan keuangan / hasil riset\n• Pidato / pernyataan resmi\n• Catatan rapat / notulensi\nAI akan otomatis membedah 5W+1H, mengekstrak kutipan kunci, dan merancang judul serta angle terbaik.`}
+                placeholder={`Paste teks berita atau bahan konten di sini — bisa berupa:\n• Teks berita atau transkrip wawancara\n• Kutipan langsung pejabat/tokoh\n• Siaran pers / rilis resmi instansi\n• Data fakta lapangan / kronologi kejadian\n• Laporan kebijakan, keuangan, atau hasil riset\nAI akan otomatis membedah poin 5W+1H, mengekstrak nama tokoh/narasumber beserta institusinya, menyaring kutipan, serta merancang sudut pandang dan judul SEO.`}
                 value={rawText}
                 onChange={e => setRawText(e.target.value)}
                 style={{ fontSize: 'var(--text-base)', lineHeight: '1.6' }}
               />
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)', marginTop: '4px' }}>
-                * AI akan otomatis membedah poin 5W+1H, menyaring kutipan langsung narsum, dan merancang sudut pandang serta judul SEO.
+                * AI akan otomatis membedah poin 5W+1H (termasuk identifikasi tokoh/narasumber dan jabatannya), menyaring kutipan, serta merancang sudut pandang dan judul SEO.
               </div>
             </div>
 
@@ -442,7 +436,7 @@ export default function QuickNewsPage() {
                 className="btn btn-primary"
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || !rawText.trim()}
-                style={{ minWidth: '220px', height: '40px' }}
+                style={{ minWidth: '240px', height: '40px' }}
               >
                 {isAnalyzing ? (
                   <>
@@ -450,7 +444,7 @@ export default function QuickNewsPage() {
                   </>
                 ) : (
                   <>
-                    Analisis 5W+1H & Judul SEO <ArrowRight size={16} />
+                    Analisis 5W+1H & Rekomendasi Judul <ArrowRight size={16} />
                   </>
                 )}
               </button>
@@ -559,7 +553,7 @@ export default function QuickNewsPage() {
                       color: 'var(--color-fg-default)'
                     }}
                   >
-                    &ldquo;{q.quote}&rdquo; &mdash; <strong style={{ fontStyle: 'normal' }}>{q.speaker || speakerName}</strong>
+                    &ldquo;{q.quote}&rdquo; &mdash; <strong style={{ fontStyle: 'normal' }}>{q.speaker || analysisResult?.five_w_one_h?.who || 'Narasumber'}</strong>
                   </blockquote>
                 ))}
               </div>
@@ -667,15 +661,15 @@ export default function QuickNewsPage() {
                 className="btn btn-success"
                 onClick={handleGenerateDraft}
                 disabled={isGenerating}
-                style={{ minWidth: '240px', height: '40px' }}
+                style={{ minWidth: '260px', height: '40px' }}
               >
                 {isGenerating ? (
                   <>
-                    <Spinner size="sm" /> Menulis Berita 400 Kata...
+                    <Spinner size="sm" /> Menulis Naskah Berdasarkan 5W+1H...
                   </>
                 ) : (
                   <>
-                    Buat Berita 5W+1H (±400 Kata) <ArrowRight size={16} />
+                    Generate Naskah berdasarkan 5W + 1H (±400 Kata) <ArrowRight size={16} />
                   </>
                 )}
               </button>
@@ -685,7 +679,7 @@ export default function QuickNewsPage() {
       )}
 
       {/* ════════════════════════════════════════════════════════════════════════ */}
-      {/* SLIDE 3: NASKAH BERITA 5W+1H JADI + EDITORIAL REVIEW + KALKULATOR KATA  */}
+      {/* SLIDE 3: NASKAH BERITA JADI + EDITORIAL REVIEW + KALKULATOR KATA       */}
       {/* ════════════════════════════════════════════════════════════════════════ */}
       {slide === 3 && draftResult && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -703,7 +697,7 @@ export default function QuickNewsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Check size={18} style={{ color: 'var(--color-success-fg)' }} />
                 <span style={{ fontWeight: 700, color: 'var(--color-fg-default)' }}>
-                  Naskah Berita 5W+1H Selesai Dibuat
+                  Generate Naskah berdasarkan 5W + 1H Selesai
                 </span>
                 <Badge variant="pass">Target SEO 2026 (±400 kata)</Badge>
               </div>

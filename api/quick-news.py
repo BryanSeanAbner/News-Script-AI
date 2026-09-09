@@ -94,7 +94,7 @@ def extract_json(text: str) -> str:
     return text.strip()
 
 
-def analyze_interview_narsum(raw_text: str, speaker_name: str = "", speaker_title: str = "", topic: str = "") -> Dict[str, Any]:
+def analyze_interview_narsum(raw_text: str, speaker_name: str = "", speaker_title: str = "", topic: str = "", title: str = "") -> Dict[str, Any]:
     """
     Slide 1 -> Slide 2:
     Analisis kutipan/wawancara narsum menjadi 5W+1H, intisari kutipan, sudut pandang (angle),
@@ -102,13 +102,14 @@ def analyze_interview_narsum(raw_text: str, speaker_name: str = "", speaker_titl
     """
     provider = AIProvider()
     
+    user_title_context = f"\n- Ide / Judul Awal Pengguna: {title}" if title else ""
     prompt = f"""Kamu adalah editor konten senior dan analis teks berpengalaman, spesialis SEO 2026.
 Kamu mampu menganalisis semua jenis bahan teks: kutipan wawancara, siaran pers, laporan riset, pidato, notulensi, atau pernyataan resmi.
 
 INFORMASI SUMBER:
-- Nama: {speaker_name or "Sesuai dalam teks"}
-- Jabatan/Institusi: {speaker_title or "Sesuai dalam teks"}
-- Topik/Kategori: {topic or "Umum"}
+- Topik/Kategori: {topic or "Umum"}{user_title_context}
+{f"- Nama Narsum/Penulis (jika ada): {speaker_name}" if speaker_name else "- Nama Tokoh/Penulis: Otomatis ekstrak dari teks"}
+{f"- Jabatan/Institusi (jika ada): {speaker_title}" if speaker_title else "- Jabatan/Institusi: Otomatis ekstrak dari teks"}
 
 TEKS WAWANCARA / PERNYATAAN / KUTIPAN NARSUM:
 \"\"\"
@@ -118,17 +119,18 @@ TEKS WAWANCARA / PERNYATAAN / KUTIPAN NARSUM:
 TUGAS KAMU:
 1. Bedah teks menjadi formula 5W+1H yang padat, akurat, dan faktual:
    - What (Peristiwa apa yang terjadi/dibahas)
-   - Who (Siapa tokoh/pelaku/korban/pejabat/narsum terkait)
+   - Who (Siapa tokoh/pelaku/korban/pejabat/narsum terkait — sebutkan nama dan jabatan/institusinya secara lengkap yang teridentifikasi dari teks)
    - Where (Di mana lokasi peristiwa/pernyataan)
    - When (Kapan waktu peristiwa/pernyataan)
    - Why (Mengapa peristiwa terjadi / motif / alasan)
    - How (Bagaimana kronologi kejadian / bagaimana respon tindakan pihak berwenang)
-2. Ekstrak minimal 2 kutipan langsung (quotes) paling berbobot dari narasumber.
+2. Ekstrak minimal 2 kutipan langsung (quotes) paling berbobot dari narasumber beserta nama tokoh pembicaranya.
 3. Rancang 3 opsi Judul Berita SEO Google 2026:
    - Panjang 40-65 karakter
    - Diawali kata kunci utama (Keyword-Frontloaded)
    - Mengandung nama narsum/jabatan atau subjek peristiwa
    - Menghindari clickbait murahan tapi membuat penasaran (High CTR)
+   {f"- Pertimbangkan ide judul awal dari pengguna: '{title}' dan kembangkan menjadi versi judul SEO ber-CTR tinggi" if title else ""}
 4. Buat 2-3 Angle / Sudut Pandang berita yang bisa dipilih editor.
 
 PENTING: Berikan output HANYA format JSON valid tanpa markdown codeblock:
@@ -210,6 +212,16 @@ def generate_seo_news_draft(
     """
     provider = AIProvider()
     
+    if not speaker_name:
+        if quotes and len(quotes) > 0 and quotes[0].get('speaker'):
+            speaker_name = quotes[0].get('speaker')
+        elif five_w_one_h and five_w_one_h.get('who'):
+            speaker_name = five_w_one_h.get('who')
+        else:
+            speaker_name = "Narasumber / Tokoh Terkait"
+
+    speaker_display = f"{speaker_name} ({speaker_title})" if speaker_title else speaker_name
+
     five_w_text = ""
     if five_w_one_h:
         five_w_text = f"""
@@ -232,7 +244,7 @@ Kamu menerapkan formula SEO Google 2026: 5W+1H, H2 terstruktur, kutipan kuat, da
 
 JUDUL: {selected_title}
 SUDUT PANDANG: {selected_angle or "Analisis Kebijakan & Tanggapan Resmi"}
-NARASOURCE / PENULIS: {speaker_name} ({speaker_title})
+NARASUMBER / PENULIS: {speaker_display}
 TOPIK: {topic or "Umum"}
 
 {five_w_text}
@@ -481,7 +493,7 @@ Keluarkan HANYA JSON valid tanpa markdown code block, tanpa komentar apapun di l
 
 INFO KONTEN:
 - Judul: {selected_title}
-- Narasumber: {speaker_name} ({speaker_title})
+- Narasumber / Tokoh: {speaker_display}
 - Topik: {topic or "Umum"}
 - Bahan asli: {raw_text[:800]}
 
@@ -632,8 +644,9 @@ class handler(BaseHTTPRequestHandler):
                 speaker_name = req.get('speaker_name', '')
                 speaker_title = req.get('speaker_title', '')
                 topic = req.get('topic', '')
+                title = req.get('title', '')
                 
-                result = analyze_interview_narsum(raw_text, speaker_name, speaker_title, topic)
+                result = analyze_interview_narsum(raw_text, speaker_name, speaker_title, topic, title)
                 self.send_json_response(200, {"status": "ok", "data": result})
                 
             elif action == 'generate':

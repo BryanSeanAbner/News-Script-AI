@@ -77,7 +77,7 @@ export function Sidebar({ isOpen, onClose }) {
                 </button>
               </li>
 
-              {/* Buat Berita 5W+1H (3 Slide) */}
+              {/* Generate Naskah berdasarkan 5W+1H (3 Slide) */}
               <li>
                 <button
                   className={`pipeline-step nav-item ${isActive('/new') || isActive('/quick-news') ? 'active' : ''}`}
@@ -85,7 +85,7 @@ export function Sidebar({ isOpen, onClose }) {
                   aria-current={(isActive('/new') || isActive('/quick-news')) ? 'page' : undefined}
                 >
                   <span className="nav-icon"><IconPen /></span>
-                  <span className="sidebar-label">Buat Berita 5W+1H</span>
+                  <span className="sidebar-label">Generate Naskah berdasarkan 5W+1H</span>
                 </button>
               </li>
 

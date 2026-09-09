@@ -32,13 +32,13 @@ except ImportError:
 
 class AIProvider:
     """
-    Multi-provider AI adapter dengan fallback urutan:
-    1. OpenRouter AI (Free Models: Llama 3.3 70B Free, DeepSeek Chat Free)
-    2. Google Gemini AI (Free Tier: Gemini 2.0 Flash, Gemini 1.5 Flash)
-    3. Groq AI (Free Tier: Llama 3.3 70B Versatile, Llama 3.1 8B Instant)
+    Multi-provider AI adapter dengan fallback urutan (FREE MODELS ONLY):
+    1. OpenRouter AI (Free: nex-agi/nex-n2.5-mini:free, nex-agi/nex-n2.5-pro:free)
+    2. Google Gemini AI (Free: gemini-3.1-flash-lite, gemini-3-flash-preview)
+    3. Groq AI (Free: openai/gpt-oss-120b, openai/gpt-oss-20b)
     
     Setiap provider mencoba Model 1 terlebih dahulu, jika gagal/rate limit beralih ke Model 2,
-    sebelum melanjutkan ke provider berikutnya.
+    sebelum melanjutkan ke provider berikutnya. Jaminan 100% FREE MODELS ONLY (tanpa opsi berbayar).
     """
     
     def __init__(self):
@@ -46,19 +46,18 @@ class AIProvider:
         self.gemini_key = os.getenv('GEMINI_API_KEY', '')
         self.groq_key = os.getenv('GROQ_API_KEY') or os.getenv('GROK_API_KEY', '')
 
-        # Model Gratis (100% Free / Free-tier)
+        # Model Gratis (100% Free / Free-tier) - FREE MODELS ONLY
         self.openrouter_models = [
-            "meta-llama/llama-3.3-70b-instruct:free",
-            "deepseek/deepseek-chat:free",
-            "qwen/qwen-2.5-72b-instruct:free"
+            "nex-agi/nex-n2.5-mini:free",
+            "nex-agi/nex-n2.5-pro:free"
         ]
         self.gemini_models = [
-            "gemini-2.0-flash",
-            "gemini-1.5-flash"
+            "gemini-3.1-flash-lite",
+            "gemini-3-flash-preview"
         ]
         self.groq_models = [
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant"
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b"
         ]
     
     def generate(self, prompt: str, max_tokens: int = 4096) -> str:

@@ -85,185 +85,13 @@ class AIProvider:
 
 
 def extract_json(text: str) -> str:
-    """Extract JSON dari response yang mungkin berisi markdown (legacy alias)"""
-    return robust_json_loads(text) if False else _extract_json_raw(text)
-
-
-def _extract_json_raw(text: str) -> str:
-    """Raw extraction saja (untuk kompatibilitas generate_seo_news_draft)"""
+    """Extract JSON dari response yang mungkin berisi markdown"""
     text = text.strip()
     if "```json" in text:
         text = text.split("```json")[1].split("```")[0]
     elif "```" in text:
         text = text.split("```")[1].split("```")[0]
-    # Strip trailing commas before } and ]
-    text = re.sub(r',\s*([\}\]])', r'\1', text)
-    text = re.sub(r',\s*([\}\]])', r'\1', text)  # 2nd pass for nested
     return text.strip()
-
-
-def robust_json_loads(text: str):
-    """
-    Parser JSON yang toleran terhadap output LLM yang tidak sempurna:
-    - Strips markdown fences (```json ... ```)
-    - Isolates outermost { ... } atau [ ... ]
-    - Strips JS/C++ comments
-    - Removes trailing commas before } and ] (multi-pass)
-    - Fixes unquoted property names: { key: "v" } -> { "key": "v" }
-    - Falls back to ast.literal_eval untuk single-quoted dicts
-    """
-    if not text or not isinstance(text, str):
-        raise ValueError("Empty or invalid text input")
-
-    cleaned = text.strip()
-
-    # 1. Strip markdown fences
-    match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', cleaned, re.IGNORECASE)
-    if match:
-        cleaned = match.group(1).strip()
-
-    # 2. Extract outermost JSON object or array
-    brace_start = cleaned.find('{')
-    bracket_start = cleaned.find('[')
-    start_idx = end_idx = -1
-
-    if brace_start != -1 and (bracket_start == -1 or brace_start < bracket_start):
-        start_idx = brace_start
-        end_idx = cleaned.rfind('}')
-    elif bracket_start != -1:
-        start_idx = bracket_start
-        end_idx = cleaned.rfind(']')
-
-    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-        cleaned = cleaned[start_idx:end_idx + 1]
-
-    # 3. Strip JS/C++ style comments
-    cleaned = re.sub(r'//[^\n\r]*', '', cleaned)
-    cleaned = re.sub(r'/\*[\s\S]*?\*/', '', cleaned)
-
-    # 4. Remove trailing commas before } or ] (multi-pass until stable)
-    prev = None
-    while prev != cleaned:
-        prev = cleaned
-        cleaned = re.sub(r',\s*([\}\]])', r'\1', cleaned)
-
-    # Attempt 1: Direct json.loads
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        pass
-
-    # Attempt 2: Fix unquoted property names {key: "v"} -> {"key": "v"}
-    try:
-        fixed = re.sub(r'([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned)
-        prev = None
-        while prev != fixed:
-            prev = fixed
-            fixed = re.sub(r',\s*([\}\]])', r'\1', fixed)
-        return json.loads(fixed)
-    except Exception:
-        pass
-
-    # Attempt 3: ast.literal_eval for Python dict / single-quoted
-    try:
-        import ast
-        val = ast.literal_eval(cleaned)
-        if isinstance(val, (dict, list)):
-            return val
-    except Exception:
-        pass
-
-    # Attempt 4: Clean stray control characters
-    try:
-        ctrl_cleaned = re.sub(
-            r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', ' ', cleaned
-        )
-        return json.loads(ctrl_cleaned)
-    except Exception:
-        pass
-
-    raise json.JSONDecodeError("robust_json_loads: unable to repair JSON", cleaned, 0)
-
-
-def fallback_extract_analysis(
-    text: str,
-    default_title: str = "",
-    default_topic: str = "",
-    raw_text: str = ""
-) -> Dict[str, Any]:
-    """
-    Ekstraksi 5W+1H, quotes, titles, angles dari teks raw LLM via regex.
-    Dipakai sebagai last-resort ketika robust_json_loads gagal total.
-    Menjamin endpoint TIDAK pernah mengembalikan HTTP 500 karena JSON rusak.
-    """
-    data: Dict[str, Any] = {
-        "five_w_one_h": {"what": "", "who": "", "where": "", "when": "", "why": "", "how": ""},
-        "quotes": [],
-        "titles": [],
-        "angles": []
-    }
-
-    # Ekstraksi 5W+1H
-    for field in ["what", "who", "where", "when", "why", "how"]:
-        m = re.search(rf'"{field}"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', text, re.IGNORECASE)
-        if not m:
-            m = re.search(rf'"{field}"\s*:\s*[\'"](.*?)[\'"\s]\s*[,}}]', text, re.IGNORECASE)
-        if m:
-            data["five_w_one_h"][field] = m.group(1).strip()
-
-    # Ekstraksi quotes
-    pairs = re.findall(
-        r'"speaker"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"\'\s*,\s*"quote"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"',
-        text
-    )
-    if not pairs:
-        pairs = re.findall(
-            r'"speaker"\s*:\s*"([^"]+)"[\s\S]*?"quote"\s*:\s*"([^"]+)"',
-            text
-        )
-    for sp, q in pairs:
-        data["quotes"].append({"speaker": sp.strip(), "quote": q.strip()})
-
-    # Ekstraksi titles (field "text" di dalam titles array)
-    title_texts = re.findall(r'"text"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', text)
-    for i, t in enumerate(title_texts[:3], 1):
-        data["titles"].append({
-            "id": i, "text": t.strip(),
-            "keyword": default_topic or "Berita Terkini",
-            "style": "SEO Recommended"
-        })
-
-    # Ekstraksi angles
-    ang = re.findall(
-        r'"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"+[\s\S]*?"hook"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"',
-        text
-    )
-    for i, (at, ah) in enumerate(ang[:3], 1):
-        data["angles"].append({"id": i, "title": at.strip(), "hook": ah.strip()})
-
-    # Default fallback values jika masih kosong
-    w = data["five_w_one_h"]
-    if not w["what"]:  w["what"] = default_title or "Peristiwa penting terkini yang dibahas narasumber."
-    if not w["who"]:   w["who"] = "Pihak terkait dan narasumber dalam keterangan resmi"
-    if not w["where"]: w["where"] = "Jakarta / Lokasi keterangan resmi"
-    if not w["when"]:  w["when"] = "Terkini"
-    if not w["why"]:   w["why"] = "Menindaklanjuti laporan dan perkembangan situasi terkini."
-    if not w["how"]:   w["how"] = "Melalui klarifikasi dan koordinasi resmi bersama otoritas terkait."
-
-    base_t = default_title if default_title else "Klarifikasi Fakta Terkini"
-    if not data["titles"]:
-        data["titles"] = [
-            {"id": 1, "text": f"{base_t}: Penjelasan Lengkap dan Fakta di Lapangan", "keyword": default_topic or "Klarifikasi", "style": "Breaking News"},
-            {"id": 2, "text": f"Duduk Perkara {base_t}: Kronologi dan Tanggapan Resmi", "keyword": default_topic or "Kronologi", "style": "Kronologi & Dampak"},
-            {"id": 3, "text": f"Sikap Tegas Terkait {base_t}: Evaluasi dan Tindak Lanjut", "keyword": default_topic or "Tindak Lanjut", "style": "Pernyataan Pejabat"}
-        ]
-    if not data["angles"]:
-        data["angles"] = [
-            {"id": 1, "title": "Fokus Kronologi & Peristiwa", "hook": "Menyoroti detik-detik peristiwa dan fakta di lapangan"},
-            {"id": 2, "title": "Fokus Tanggapan Resmi & Evaluasi", "hook": "Menyoroti pernyataan pihak terkait dan evaluasi aturan"}
-        ]
-
-    return data
 
 
 def analyze_interview_narsum(raw_text: str, speaker_name: str = "", speaker_title: str = "", topic: str = "", title: str = "") -> Dict[str, Any]:
@@ -305,16 +133,7 @@ TUGAS KAMU:
    {f"- Pertimbangkan ide judul awal dari pengguna: '{title}' dan kembangkan menjadi versi judul SEO ber-CTR tinggi" if title else ""}
 4. Buat 2-3 Angle / Sudut Pandang berita yang bisa dipilih editor.
 
-ATURAN JSON WAJIB:
-- Output HANYA format JSON valid, tanpa markdown codeblock, tanpa komentar.
-- DILARANG KERAS menggunakan tanda petik ganda (") di dalam nilai string.
-  Gunakan tanda petik tunggal (') untuk kutipan langsung di dalam teks.
-  Contoh BENAR: "quote": "Stephanie mengatakan 'Penjual adalah mitra kami.'"
-  Contoh SALAH:  "quote": "Stephanie mengatakan \"Penjual adalah mitra kami.\""
-- DILARANG trailing comma setelah item terakhir di dalam array atau object.
-- WAJIB menggunakan double-quote (") untuk semua nama properti JSON.
-
-FORMAT OUTPUT:
+PENTING: Berikan output HANYA format JSON valid tanpa markdown codeblock:
 {{
   "five_w_one_h": {{
     "what": "...",
@@ -327,7 +146,7 @@ FORMAT OUTPUT:
   "quotes": [
     {{
       "speaker": "...",
-      "quote": "Kutipan langsung verbatim menggunakan tanda petik tunggal untuk kutipan di dalam teks..."
+      "quote": "Kutipan langsung verbatim..."
     }}
   ],
   "titles": [
@@ -365,56 +184,8 @@ FORMAT OUTPUT:
 }}"""
 
     result_text = provider.generate(prompt, max_tokens=3000)
-
-    # Attempt 1: robust parse
-    try:
-        data = robust_json_loads(result_text)
-        return data
-    except Exception as e:
-        print(f"[analyze_interview_narsum] Attempt 1 JSON parse failed: {e}")
-
-    # Attempt 2: Retry dengan prompt yang lebih strict
-    try:
-        retry_prompt = f"""Kamu adalah parser JSON. Output HANYA objek JSON valid, tanpa penjelasan, tanpa markdown.
-Gunakan tanda petik tunggal (') untuk kutipan di dalam nilai string agar tidak merusak JSON.
-JANGAN trailing comma. WAJIB double-quote untuk semua key.
-
-TEKS SUMBER:
-\"\"\"
-{raw_text[:2000]}
-\"\"\"
-
-TOPIK: {topic or 'Umum'}
-
-OUTPUT JSON:
-{{
-  "five_w_one_h": {{"what": "...", "who": "...", "where": "...", "when": "...", "why": "...", "how": "..."}},
-  "quotes": [{{"speaker": "Nama", "quote": "Kutipan dengan petik tunggal jika perlu"}}],
-  "titles": [
-    {{"id": 1, "text": "Judul SEO 1", "keyword": "keyword", "style": "Breaking News"}},
-    {{"id": 2, "text": "Judul SEO 2", "keyword": "keyword", "style": "Kronologi"}},
-    {{"id": 3, "text": "Judul SEO 3", "keyword": "keyword", "style": "Pernyataan Pejabat"}}
-  ],
-  "angles": [
-    {{"id": 1, "title": "Sudut Pandang 1", "hook": "Hook 1"}},
-    {{"id": 2, "title": "Sudut Pandang 2", "hook": "Hook 2"}}
-  ]
-}}"""
-        retry_text = provider.generate(retry_prompt, max_tokens=2000)
-        data = robust_json_loads(retry_text)
-        print("[analyze_interview_narsum] Attempt 2 (retry) succeeded.")
-        return data
-    except Exception as e2:
-        print(f"[analyze_interview_narsum] Attempt 2 retry also failed: {e2}")
-
-    # Attempt 3: Regex fallback - NEVER returns HTTP 500
-    print("[analyze_interview_narsum] Falling back to regex extraction.")
-    return fallback_extract_analysis(
-        result_text,
-        default_title=title,
-        default_topic=topic,
-        raw_text=raw_text
-    )
+    data = json.loads(extract_json(result_text))
+    return data
 
 
 def generate_seo_news_draft(
@@ -490,35 +261,39 @@ BAHAN MENTAH:
 ATURAN WAJIB — TIDAK BOLEH DILANGGAR:
 ═══════════════════════════════════════════════════════════════
 
-A) FIELD "text" DI SETIAP PARAGRAF HARUS BERUPA KALIMAT BERITA PROSA BIASA:
-   - DILARANG KERAS menulis JSON, tanda kurung kurawal {{}}, tanda kutip string, atau metadata di dalam field text.
+A) FIELD "text" DI SETIAP PARAGRAF HARUS BERUPA KALIMAT BERITA PROSA BIASA.
+   - DILARANG KERAS menulis JSON, tanda kurung kurawal {{}}, tanda kutip string, atau metadata apa pun di dalam field text.
+   - DILARANG menulis placeholder seperti "...", "[isi di sini]", atau teks petunjuk.
    - Setiap field "text" HARUS diisi kalimat nyata bahasa Indonesia yang siap cetak di media.
 
-B) SEMUA FAKTA WAJIB DIMASUKKAN KE DALAM FULL TEXT:
-   - Setiap fakta dari bahan input dan 5W+1H (peristiwa, nama tokoh/pejabat, lokasi, waktu, alasan/motif, kronologi lapangan, angka nominal, barang bukti, pasal hukum, dan tindak lanjut) WAJIB dimasukkan secara utuh ke dalam teks berita.
-   - Jangan ada fakta penting yang dibuang atau diabaikan.
+B) REASONING & ANALISIS MANDIRI — BUKAN COPY-PASTE:
+   - Jelaskan konteks topik secara analitis: latar belakang regulasi/institusi/program, mekanisme, dampak, sejarah.
+   - Kembangkan fakta dengan narasi sebab-akibat yang logis.
+   - Jika input singkat: elaborasi dengan pengetahuan kontekstual yang relevan.
 
-C) KUTIPAN LANGSUNG NARASUMBER ADALAH BERITA FAKTA — BEBAS TANPA BATASAN:
-   - Kutipan langsung narasumber adalah fakta otentik berita.
-   - JANGAN batasi kutipan langsung narsum: masukkan semua kutipan fakta yang ada pada bahan mentah secara proporsional di deskripsi fakta naskah.
+C) WAJIB 2 PARAGRAF BERLABEL "OPINI":
+   - Paragraf OPINI ke-1 (di seksi H2_KONTEKS): Analisis editorial tentang implikasi topik ini bagi publik, ekonomi, hukum, atau tata kelola.
+   - Paragraf OPINI ke-2 (di seksi H2_TANGGAPAN): Catatan kritis atau harapan tentang pengawasan, mitigasi risiko, atau langkah ke depan.
+   - OPINI harus berupa kalimat analitis ORISINAL, bukan pengulangan fakta.
+   - JIKA input bukan berita (misal: laporan bisnis, riset, pidato) — OPINI tetap wajib, sesuaikan sudut pandangnya.
 
-D) SUB-JUDUL H2 ADALAH TEMA FAKTA UTAMA — MAKSIMAL 3 H2:
-   - Sub-judul H2 mengangkat tema fakta inti peristiwa (misal: kronologi fakta, kerugian & barang bukti, dan tindak lanjut/hukum).
-   - JUMLAH SUB-JUDUL H2: MAKSIMAL 3 H2 (tepat 2 hingga 3 H2, tidak boleh lebih dari 3).
+D) TARGET KATA: 400 - 450 KATA TOTAL (TARGET MINIMUM KETAT 380 KATA):
+   - SANGAT DILARANG menghasilkan di bawah 380 kata. Ini KEGAGALAN teknis.
+   - Zona optimal Google News 2026: 400-450 kata.
+   - Jangan lebih dari 480 kata agar tetap mobile-friendly.
+   - Rincian PER PARAGRAF (WAJIB DIPENUHI):
+     * LEAD (Para 1): 45-55 kata, 3 kalimat, tipe FACT — siapa, apa, di mana, kapan, mengapa, bagaimana.
+     * H2 KRONOLOGI Para 2 [FACT]: 50-60 kata, 2-3 kalimat, sertakan kutipan narsum #1.
+     * H2 KRONOLOGI Para 3 [CONTEXT]: 50-60 kata, 2-3 kalimat, uraian mekanisme/proses/latar.
+     * H2 KONTEKS Para 4 [CONTEXT]: 50-60 kata, 2-3 kalimat, data historis/regulasi pendukung.
+     * H2 KONTEKS Para 5 [OPINI]: 50-60 kata, 2-3 kalimat, ANALISIS EDITORIAL MENDALAM.
+     * H2 TANGGAPAN Para 6 [FACT]: 45-55 kata, 2-3 kalimat, pernyataan lanjutan + kutipan narsum #2.
+     * H2 TANGGAPAN Para 7 [OPINI]: 45-55 kata, 2-3 kalimat, CATATAN KRITIS REDAKSI.
+     * PENUTUP Para 8 [CONTEXT]: 35-45 kata, 2 kalimat, prospek/tindak lanjut.
+   - Total 8 paragraf = minimum 380 kata, target 420 kata.
 
-E) DESKRIPSI H2 MEMUAT CONTEXT DAN OPINI — MAKSIMAL 3 PARAGRAF PER H2:
-   - Di bawah setiap sub-judul H2, deskripsi memuat paragraf berlabel CONTEXT (penjelasan mekanisme, latar belakang regulasi/kebijakan) dan OPINI (analisis editorial mendalam & catatan kritis redaksi).
-   - JUMLAH PARAGRAF DESKRIPSI PER H2: MAKSIMAL 3 PARAGRAF per sub-judul H2.
-   - Wajib ada minimal 2 paragraf berlabel "OPINI" di dalam naskah:
-     * OPINI ke-1 (di H2 ke-2): Analisis editorial implikasi topik bagi publik/ekonomi/tata kelola.
-     * OPINI ke-2 (di H2 ke-3): Catatan kritis redaksi dan evaluasi mitigasi risiko ke depan.
-
-F) TARGET KATA: 300 - 500 KATA TOTAL (ZONA AMAN GOOGLE 2026):
-   - Naskah WAJIB berada di rentang 300 hingga 500 kata (target ideal 360-430 kata).
-   - SANGAT DILARANG menghasilkan di bawah 300 kata, dan jangan melebihi 500 kata agar tetap mobile-friendly.
-
-G) KETERBACAAN MOBILE:
-   - Setiap paragraf: TEPAT 2-3 KALIMAT (tidak boleh 1 kalimat, tidak boleh lebih dari 3 kalimat).
+E) KETERBACAAN MOBILE:
+   - Setiap paragraf: TEPAT 2-3 kalimat (tidak boleh 1 kalimat, tidak boleh lebih dari 3).
 
 ═══════════════════════════════════════════════════════════════
 CONTOH FORMAT TEXT YANG BENAR (isi harus sesuai topik aktual):
@@ -530,15 +305,15 @@ Contoh text OPINI yang benar:
 "Kebijakan ini menunjukkan komitmen fiskal yang positif, namun para analis mengingatkan bahwa konsistensi eksekusi di tingkat daerah masih menjadi tantangan nyata yang belum terjawab. Redaksi menilai transparansi mekanisme distribusi dan audit independen menjadi kunci agar kebijakan ini benar-benar berdampak bagi masyarakat lapis bawah."
 
 SEKARANG TULIS NASKAH BERDASARKAN BAHAN DI ATAS.
-WAJIB berada di rentang 300-500 kata (zona aman).
+WAJIB minimal 380 kata. Periksa ulang hitungan kata sebelum selesai.
 Keluarkan HANYA JSON valid tanpa markdown code block, tanpa komentar apapun di luar JSON:
 {{
   "title": "{selected_title}",
-  "word_count": 380,
+  "word_count": 400,
   "h2_headings": [
-    "Sub-judul H2 Fakta Pertama",
-    "Sub-judul H2 Fakta Kedua",
-    "Sub-judul H2 Fakta Ketiga"
+    "Tulis sub-judul H2 pertama yang spesifik sesuai topik ini",
+    "Tulis sub-judul H2 kedua yang spesifik sesuai topik ini",
+    "Tulis sub-judul H2 ketiga yang spesifik sesuai topik ini"
   ],
   "sections": [
     {{
@@ -634,7 +409,7 @@ Keluarkan HANYA JSON valid tanpa markdown code block, tanpa komentar apapun di l
     result_text = provider.generate(prompt, max_tokens=6000)
     
     try:
-        data = robust_json_loads(result_text)
+        data = json.loads(extract_json(result_text))
         
         # Flatten paragraphs
         flat_paragraphs = []
@@ -705,16 +480,16 @@ Keluarkan HANYA JSON valid tanpa markdown code block, tanpa komentar apapun di l
         current_wc = data["word_count"]
 
         for attempt in range(2):  # Maksimal 2x percobaan ekspansi
-            if current_wc >= 300 and current_wc <= 500 and has_opini:
-                break  # Sudah cukup di dalam zona aman 300-500 kata
+            if current_wc >= 380 and has_opini:
+                break  # Sudah cukup, tidak perlu ekspansi
 
-            print(f"[AGENTIC EXPANSION attempt {attempt+1}] {current_wc} kata, has_opini={has_opini}. Target zona aman 350-430 kata...")
+            print(f"[AGENTIC EXPANSION attempt {attempt+1}] {current_wc} kata, has_opini={has_opini}. Target 400-450...")
 
             # Hitung paragraf mana yang pendek
             short_paras = [p for p in flat_paragraphs if len(p.get("text", "").split()) < 40]
             missing_opini = not has_opini
 
-            expand_prompt = f"""Kamu adalah redaktur senior. Naskah ini baru {current_wc} kata, butuh 350-430 kata standar zona aman SEO Google 2026 (300-500 kata).
+            expand_prompt = f"""Kamu adalah redaktur senior. Naskah ini baru {current_wc} kata, butuh 400-450 kata standar SEO Google 2026.
 
 INFO KONTEN:
 - Judul: {selected_title}
@@ -731,14 +506,14 @@ TUGAS EKSPANSI (WAJIB SEMUA):
 3. {'TAMBAHKAN 2 paragraf OPINI jika belum ada' if missing_opini else 'Perkuat kedua paragraf OPINI yang sudah ada dengan analisis lebih dalam'}:
    - OPINI ke-1 (H2_KONTEKS): Dampak/implikasi topik ini bagi publik atau sektor terkait.
    - OPINI ke-2 (H2_TANGGAPAN): Catatan kritis, evaluasi, atau rekomendasi ke depan.
-4. Pastikan semua fakta dari bahan asli terangkum lengkap.
-5. Total hasil WAJIB berada di zona aman 350-430 kata. Setiap paragraf maksimal 3 kalimat.
+4. Jika perlu, tambahkan sub-poin di paragraf KRONOLOGI atau KONTEKS tentang aspek yang belum dibahas.
+5. Total hasil WAJIB 400-450 kata. Hitung ulang sebelum selesai.
 
 KEMBALIKAN JSON LENGKAP (struktur sections sama persis)."""
 
             try:
                 expanded_result = provider.generate(expand_prompt, max_tokens=6000)
-                expanded_data = robust_json_loads(expanded_result)
+                expanded_data = json.loads(extract_json(expanded_result))
                 flat_exp = _flatten_and_clean(expanded_data)
                 exp_wc = _word_count(flat_exp)
 
@@ -757,37 +532,10 @@ KEMBALIKAN JSON LENGKAP (struktur sections sama persis)."""
                 print(f"[AGENTIC EXPANSION attempt {attempt+1}] Gagal: {exp_err}")
                 break
 
-        # ══════════════════════════════════════════════════════════════════
-        # ENFORCE KETERBACAAN MOBILE: Maksimal 3 kalimat per paragraf
-        # ══════════════════════════════════════════════════════════════════
-        def _enforce_max_3_sentences(paras):
-            """Pecah paragraf yang melebihi 3 kalimat agar 100% ramah mobile"""
-            result = []
-            for p in paras:
-                txt = p.get("text", "").strip()
-                sentences = [s.strip() for s in re.split(r'(?<=[.!?]["\']?)\s+', txt) if len(s.strip()) > 3]
-                if len(sentences) > 3:
-                    p1 = dict(p)
-                    p1["text"] = " ".join(sentences[:2])
-                    result.append(p1)
-
-                    p2 = dict(p)
-                    p2["text"] = " ".join(sentences[2:])
-                    p2["order"] = p.get("order", 1) + 0.1
-                    result.append(p2)
-                else:
-                    result.append(p)
-            return result
-
-        flat_paragraphs = _enforce_max_3_sentences(flat_paragraphs)
-        data["paragraphs"] = flat_paragraphs
-        all_text = " ".join([p.get("text", "") for p in flat_paragraphs])
-        data["word_count"] = len(all_text.split())
-
         # Bangun full content markdown
         content_lines = []
         last_heading = None
-        for p in flat_paragraphs:
+        for p in data.get("paragraphs", []):
             h = p.get("section_heading")
             if h and h != last_heading:
                 last_heading = h
@@ -830,7 +578,7 @@ Output JSON:
 }}"""
         try:
             retry_text = provider.generate(retry_prompt, max_tokens=6000)
-            retry_data = robust_json_loads(retry_text)
+            retry_data = json.loads(extract_json(retry_text))
             flat_retry = []
             for sec in retry_data.get("sections", []):
                 sec_heading = sec.get("heading")

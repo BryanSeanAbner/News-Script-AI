@@ -100,42 +100,42 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
     }
     const hasFullComposition = factCount > 0 && contextCount > 0 && opiniCount > 0;
 
-    // Tentukan Zona SEO Jumlah Kata (Rentang 300 - 500 Kata sebagai Zona Aman)
-    let zone = 'sweet_spot';
-    let zoneLabel = 'ZONA AMAN PALING SEO (300-500 kata)';
+    // Tentukan Zona SEO Jumlah Kata
+    let zone = 'safe';
+    let zoneLabel = 'ZONA AMAN PALING SEO (Google News 2026)';
     let zoneColor = 'pass';
 
     if (wordCount < 200) {
       zone = 'too_thin';
       zoneLabel = 'Terlalu Tipis (<200 kata) — Potensi Tidak Terindeks';
       zoneColor = 'danger';
-    } else if (wordCount < 300) {
+    } else if (wordCount < 350) {
       zone = 'brief';
-      zoneLabel = 'Berita Cepat / Ringkas (200-299 kata)';
+      zoneLabel = 'Berita Cepat / Ringkas (200-349 kata)';
       zoneColor = 'warn';
     } else if (wordCount <= 500) {
       zone = 'sweet_spot';
-      zoneLabel = 'ZONA AMAN PALING SEO (300-500 kata)';
+      zoneLabel = 'ZONA AMAN PALING SEO (350-500 kata)';
       zoneColor = 'pass';
-    } else if (wordCount <= 700) {
+    } else if (wordCount <= 800) {
       zone = 'feature';
-      zoneLabel = 'Format Feature / Analisis (501-700 kata)';
+      zoneLabel = 'Agak Panjang (501-800 kata) — Format Feature/Analisis';
       zoneColor = 'info';
     } else {
       zone = 'too_long';
-      zoneLabel = 'Terlalu Panjang (>700 kata) — Resiko Bounce Rate Tinggi di HP';
+      zoneLabel = 'Terlalu Panjang (>800 kata) — Resiko Bounce Rate Tinggi di HP';
       zoneColor = 'danger';
     }
 
     // Hitung Skor SEO Kumulatif (0 - 100)
     let score = 0;
 
-    // 1. Jumlah kata (bobot 35 poin) — Zona Aman 300 - 500 kata
-    if (wordCount >= 300 && wordCount <= 500) {
-      score += 35; // Zona aman 300-500 kata terpenuhi
-    } else if (wordCount >= 250 && wordCount <= 600) {
+    // 1. Jumlah kata (bobot 35 poin)
+    if (wordCount >= 350 && wordCount <= 500) {
+      score += 35; // Sweet spot ideal
+    } else if (wordCount >= 300 && wordCount <= 600) {
       score += 25;
-    } else if (wordCount >= 180 && wordCount <= 750) {
+    } else if (wordCount >= 200 && wordCount <= 800) {
       score += 15;
     } else {
       score += 5;
@@ -150,18 +150,18 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
       score += 8;
     }
 
-    // 3. Sub-judul H2 (bobot 15 poin) — Maksimal 3 H2
-    if (h2Count >= 1 && h2Count <= 3) {
-      score += 15; // Maksimal 3 H2 sesuai instruksi
-    } else if (h2Count > 3) {
-      score += 10;
+    // 3. Sub-judul H2 (bobot 15 poin)
+    if (h2Count >= 2 && h2Count <= 4) {
+      score += 15;
+    } else if (h2Count === 1) {
+      score += 8;
     }
 
-    // 4. Kutipan Narsum (bobot 15 poin) — Bebas batasan, fakta otentik
-    if (quotesCount >= 1) {
+    // 4. Kutipan Narsum (bobot 15 poin)
+    if (quotesCount >= 2) {
       score += 15;
-    } else {
-      score += 12; // Tetap tinggi jika kutipan terangkum dalam narasi fakta
+    } else if (quotesCount === 1) {
+      score += 8;
     }
 
     // 5. Keramahan Layar HP (bobot 15 poin)
@@ -191,8 +191,8 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
     };
   }, [text, paragraphs]);
 
-  // Persentase meter hidup (skala 0 - 600 kata: 300 kata = 50%, 500 kata = 83.3%)
-  const progressPercent = Math.min(100, Math.max(0, Math.round((metrics.wordCount / 600) * 100)));
+  // Persentase meter (maks 600 kata sebagai patokan visual)
+  const progressPercent = Math.min(100, Math.round((metrics.wordCount / 500) * 100));
 
   return (
     <div style={{
@@ -213,7 +213,7 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
               Kalkulator Kata & Skor SEO Google 2026
             </div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)' }}>
-              Standar Berita Harian Google News (Zona 300–500 Kata)
+              Standar Berita Harian Google News
             </div>
           </div>
         </div>
@@ -229,7 +229,7 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
         </div>
       </div>
 
-      {/* Meter Jumlah Kata & Progress Bar Hidup */}
+      {/* Meter Jumlah Kata */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
@@ -243,77 +243,27 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
           </Badge>
         </div>
 
-        {/* Progress Bar Hidup dengan highlight zona aman 300-500 kata */}
-        <div style={{
-          position: 'relative',
-          height: '14px',
-          backgroundColor: 'var(--color-canvas-subtle)',
-          borderRadius: '999px',
-          overflow: 'hidden',
-          border: '1px solid var(--color-border-default)'
-        }}>
-          {/* Highlight visual Zona Aman 300 - 500 kata (50% hingga 83.3%) */}
+        {/* Progress Bar dengan penanda zona */}
+        <div style={{ position: 'relative', height: '10px', backgroundColor: 'var(--color-canvas-subtle)', borderRadius: '999px', overflow: 'hidden' }}>
           <div
             style={{
-              position: 'absolute',
-              left: '50%',
-              width: '33.3%',
-              top: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(46, 160, 67, 0.16)',
-              borderLeft: '1px dashed rgba(46, 160, 67, 0.5)',
-              borderRight: '1px dashed rgba(46, 160, 67, 0.5)',
-              zIndex: 1
-            }}
-            title="Zona Aman 300-500 Kata"
-          />
-
-          {/* Bar aktif yang bergerak dinamis */}
-          <div
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
+              height: '100%',
               width: `${progressPercent}%`,
-              background: metrics.wordCount >= 300 && metrics.wordCount <= 500
-                ? 'linear-gradient(90deg, #2ea043 0%, #3fb950 100%)'
-                : metrics.wordCount < 300
-                ? 'linear-gradient(90deg, #f0883e 0%, #d29922 100%)'
-                : 'linear-gradient(90deg, #1f6feb 0%, #a371f7 100%)',
-              boxShadow: metrics.wordCount >= 300 && metrics.wordCount <= 500
-                ? '0 0 10px rgba(46, 160, 67, 0.5)'
-                : 'none',
-              borderRadius: '999px',
-              transition: 'width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, box-shadow 0.3s ease',
-              zIndex: 2
+              backgroundColor: metrics.zoneColor === 'pass' 
+                ? 'var(--color-success-fg)' 
+                : metrics.zoneColor === 'warn' 
+                ? 'var(--color-attention-fg)' 
+                : 'var(--color-danger-fg)',
+              transition: 'width 0.3s ease'
             }}
           />
         </div>
 
-        {/* Skala angka presisi yang sinkron dengan progress bar */}
-        <div style={{
-          position: 'relative',
-          height: '18px',
-          fontSize: '10px',
-          color: 'var(--color-fg-muted)',
-          marginTop: '6px'
-        }}>
-          <span style={{ position: 'absolute', left: '0%' }}>0</span>
-          <span style={{ position: 'absolute', left: '33.3%', transform: 'translateX(-50%)' }}>200</span>
-          <span style={{
-            position: 'absolute',
-            left: '66.6%',
-            transform: 'translateX(-50%)',
-            fontWeight: 700,
-            color: metrics.wordCount >= 300 && metrics.wordCount <= 500 ? 'var(--color-success-fg)' : 'var(--color-fg-muted)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '2px'
-          }}>
-            {metrics.wordCount >= 300 && metrics.wordCount <= 500 && '🟢 '}300 - 500 (Zona Aman)
-          </span>
-          <span style={{ position: 'absolute', right: '0%' }}>600+</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--color-fg-muted)', marginTop: '4px' }}>
+          <span>0</span>
+          <span>200</span>
+          <span style={{ fontWeight: 'bold', color: 'var(--color-success-fg)' }}>350-500 (Zona Aman)</span>
+          <span>800+</span>
         </div>
       </div>
 
@@ -323,21 +273,19 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
           Ceklist Algoritma Google 2026
         </div>
 
-        {/* 1. Target Kata (300 - 500 kata) */}
+        {/* 1. Target Kata */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {metrics.wordCount >= 300 && metrics.wordCount <= 500 ? (
+            {metrics.wordCount >= 350 && metrics.wordCount <= 500 ? (
               <CheckCircle size={14} style={{ color: 'var(--color-success-fg)' }} />
-            ) : metrics.wordCount >= 250 && metrics.wordCount <= 600 ? (
+            ) : metrics.wordCount >= 300 && metrics.wordCount <= 550 ? (
               <AlertTriangle size={14} style={{ color: 'var(--color-attention-fg)' }} />
             ) : (
               <XCircle size={14} style={{ color: 'var(--color-danger-fg)' }} />
             )}
-            <span>Zona Kata Berita (300 - 500 kata)</span>
+            <span>Zona Kata Berita (350 - 500 kata)</span>
           </div>
-          <span style={{ fontWeight: 600, color: metrics.wordCount >= 300 && metrics.wordCount <= 500 ? 'var(--color-success-fg)' : 'inherit' }}>
-            {metrics.wordCount} kata
-          </span>
+          <span style={{ fontWeight: 600 }}>{metrics.wordCount} kata</span>
         </div>
 
         {/* 2. Lead 5W1H */}
@@ -355,26 +303,30 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
           <span style={{ fontWeight: 600 }}>{metrics.leadWords} kata</span>
         </div>
 
-        {/* 3. Sub-judul H2 (Maksimal 3 H2) */}
+        {/* 3. Sub-judul H2 */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {metrics.h2Count >= 1 && metrics.h2Count <= 3 ? (
+            {metrics.h2Count >= 2 ? (
               <CheckCircle size={14} style={{ color: 'var(--color-success-fg)' }} />
             ) : (
               <AlertTriangle size={14} style={{ color: 'var(--color-attention-fg)' }} />
             )}
-            <span>Sub-judul H2 Fakta (Maksimal 3 H2)</span>
+            <span>Sub-judul H2 (Minimal 2-3 H2)</span>
           </div>
           <span style={{ fontWeight: 600 }}>{metrics.h2Count} H2</span>
         </div>
 
-        {/* 4. Kutipan Narsum (Fakta — Bebas Batasan) */}
+        {/* 4. Kutipan Narsum */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCircle size={14} style={{ color: 'var(--color-success-fg)' }} />
-            <span>Kutipan Langsung Narsum (Fakta)</span>
+            {metrics.quotesCount >= 2 ? (
+              <CheckCircle size={14} style={{ color: 'var(--color-success-fg)' }} />
+            ) : (
+              <AlertTriangle size={14} style={{ color: 'var(--color-attention-fg)' }} />
+            )}
+            <span>Kutipan Langsung Narsum (Minimal 2)</span>
           </div>
-          <span style={{ fontWeight: 600 }}>{metrics.quotesCount > 0 ? `${metrics.quotesCount} kutipan fakta` : 'Tercakup dalam narasi'}</span>
+          <span style={{ fontWeight: 600 }}>{metrics.quotesCount} kutipan</span>
         </div>
 
         {/* 5. Keramahan Layar HP (Maks 3 kalimat/paragraf) */}

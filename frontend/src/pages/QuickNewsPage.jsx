@@ -254,7 +254,7 @@ export default function QuickNewsPage() {
             Mode Cepat Google 2026
           </Badge>
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)' }}>
-            Rumus SEO 350–500 Kata (Target ±400 Kata) — Berita, Artikel, Laporan, Opini
+            Rumus SEO 300–500 Kata (Zona Aman) — Berita, Artikel, Laporan, Opini
           </span>
         </div>
         <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--color-fg-default)' }}>
@@ -669,7 +669,7 @@ export default function QuickNewsPage() {
                   </>
                 ) : (
                   <>
-                    Generate Naskah berdasarkan 5W + 1H (±400 Kata) <ArrowRight size={16} />
+                    Generate Naskah berdasarkan 5W + 1H (300-500 Kata) <ArrowRight size={16} />
                   </>
                 )}
               </button>
@@ -699,7 +699,7 @@ export default function QuickNewsPage() {
                 <span style={{ fontWeight: 700, color: 'var(--color-fg-default)' }}>
                   Generate Naskah berdasarkan 5W + 1H Selesai
                 </span>
-                <Badge variant="pass">Target SEO 2026 (±400 kata)</Badge>
+                <Badge variant="pass">Target SEO 2026 (300-500 kata)</Badge>
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)', marginTop: '2px' }}>
                 Anda dapat menyunting langsung tiap paragraf di bawah (Editorial Review). Kalkulator Kata di sebelah kanan merespon secara real-time.

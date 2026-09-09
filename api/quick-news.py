@@ -261,39 +261,35 @@ BAHAN MENTAH:
 ATURAN WAJIB — TIDAK BOLEH DILANGGAR:
 ═══════════════════════════════════════════════════════════════
 
-A) FIELD "text" DI SETIAP PARAGRAF HARUS BERUPA KALIMAT BERITA PROSA BIASA.
-   - DILARANG KERAS menulis JSON, tanda kurung kurawal {{}}, tanda kutip string, atau metadata apa pun di dalam field text.
-   - DILARANG menulis placeholder seperti "...", "[isi di sini]", atau teks petunjuk.
+A) FIELD "text" DI SETIAP PARAGRAF HARUS BERUPA KALIMAT BERITA PROSA BIASA:
+   - DILARANG KERAS menulis JSON, tanda kurung kurawal {{}}, tanda kutip string, atau metadata di dalam field text.
    - Setiap field "text" HARUS diisi kalimat nyata bahasa Indonesia yang siap cetak di media.
 
-B) REASONING & ANALISIS MANDIRI — BUKAN COPY-PASTE:
-   - Jelaskan konteks topik secara analitis: latar belakang regulasi/institusi/program, mekanisme, dampak, sejarah.
-   - Kembangkan fakta dengan narasi sebab-akibat yang logis.
-   - Jika input singkat: elaborasi dengan pengetahuan kontekstual yang relevan.
+B) SEMUA FAKTA WAJIB DIMASUKKAN KE DALAM FULL TEXT:
+   - Setiap fakta dari bahan input dan 5W+1H (peristiwa, nama tokoh/pejabat, lokasi, waktu, alasan/motif, kronologi lapangan, angka nominal, barang bukti, pasal hukum, dan tindak lanjut) WAJIB dimasukkan secara utuh ke dalam teks berita.
+   - Jangan ada fakta penting yang dibuang atau diabaikan.
 
-C) WAJIB 2 PARAGRAF BERLABEL "OPINI":
-   - Paragraf OPINI ke-1 (di seksi H2_KONTEKS): Analisis editorial tentang implikasi topik ini bagi publik, ekonomi, hukum, atau tata kelola.
-   - Paragraf OPINI ke-2 (di seksi H2_TANGGAPAN): Catatan kritis atau harapan tentang pengawasan, mitigasi risiko, atau langkah ke depan.
-   - OPINI harus berupa kalimat analitis ORISINAL, bukan pengulangan fakta.
-   - JIKA input bukan berita (misal: laporan bisnis, riset, pidato) — OPINI tetap wajib, sesuaikan sudut pandangnya.
+C) KUTIPAN LANGSUNG NARASUMBER ADALAH BERITA FAKTA — BEBAS TANPA BATASAN:
+   - Kutipan langsung narasumber adalah fakta otentik berita.
+   - JANGAN batasi kutipan langsung narsum: masukkan semua kutipan fakta yang ada pada bahan mentah secara proporsional di deskripsi fakta naskah.
 
-D) TARGET KATA: 400 - 450 KATA TOTAL (TARGET MINIMUM KETAT 380 KATA):
-   - SANGAT DILARANG menghasilkan di bawah 380 kata. Ini KEGAGALAN teknis.
-   - Zona optimal Google News 2026: 400-450 kata.
-   - Jangan lebih dari 480 kata agar tetap mobile-friendly.
-   - Rincian PER PARAGRAF (WAJIB DIPENUHI):
-     * LEAD (Para 1): 45-55 kata, 3 kalimat, tipe FACT — siapa, apa, di mana, kapan, mengapa, bagaimana.
-     * H2 KRONOLOGI Para 2 [FACT]: 50-60 kata, 2-3 kalimat, sertakan kutipan narsum #1.
-     * H2 KRONOLOGI Para 3 [CONTEXT]: 50-60 kata, 2-3 kalimat, uraian mekanisme/proses/latar.
-     * H2 KONTEKS Para 4 [CONTEXT]: 50-60 kata, 2-3 kalimat, data historis/regulasi pendukung.
-     * H2 KONTEKS Para 5 [OPINI]: 50-60 kata, 2-3 kalimat, ANALISIS EDITORIAL MENDALAM.
-     * H2 TANGGAPAN Para 6 [FACT]: 45-55 kata, 2-3 kalimat, pernyataan lanjutan + kutipan narsum #2.
-     * H2 TANGGAPAN Para 7 [OPINI]: 45-55 kata, 2-3 kalimat, CATATAN KRITIS REDAKSI.
-     * PENUTUP Para 8 [CONTEXT]: 35-45 kata, 2 kalimat, prospek/tindak lanjut.
-   - Total 8 paragraf = minimum 380 kata, target 420 kata.
+D) SUB-JUDUL H2 ADALAH TEMA FAKTA UTAMA — MAKSIMAL 3 H2:
+   - Sub-judul H2 mengangkat tema fakta inti peristiwa (misal: kronologi fakta, kerugian & barang bukti, dan tindak lanjut/hukum).
+   - JUMLAH SUB-JUDUL H2: MAKSIMAL 3 H2 (tepat 2 hingga 3 H2, tidak boleh lebih dari 3).
 
-E) KETERBACAAN MOBILE:
-   - Setiap paragraf: TEPAT 2-3 kalimat (tidak boleh 1 kalimat, tidak boleh lebih dari 3).
+E) DESKRIPSI H2 MEMUAT CONTEXT DAN OPINI — MAKSIMAL 3 PARAGRAF PER H2:
+   - Di bawah setiap sub-judul H2, deskripsi memuat paragraf berlabel CONTEXT (penjelasan mekanisme, latar belakang regulasi/kebijakan) dan OPINI (analisis editorial mendalam & catatan kritis redaksi).
+   - JUMLAH PARAGRAF DESKRIPSI PER H2: MAKSIMAL 3 PARAGRAF per sub-judul H2.
+   - Wajib ada minimal 2 paragraf berlabel "OPINI" di dalam naskah:
+     * OPINI ke-1 (di H2 ke-2): Analisis editorial implikasi topik bagi publik/ekonomi/tata kelola.
+     * OPINI ke-2 (di H2 ke-3): Catatan kritis redaksi dan evaluasi mitigasi risiko ke depan.
+
+F) TARGET KATA: 300 - 500 KATA TOTAL (ZONA AMAN GOOGLE 2026):
+   - Naskah WAJIB berada di rentang 300 hingga 500 kata (target ideal 360-430 kata).
+   - SANGAT DILARANG menghasilkan di bawah 300 kata, dan jangan melebihi 500 kata agar tetap mobile-friendly.
+
+G) KETERBACAAN MOBILE:
+   - Setiap paragraf: TEPAT 2-3 KALIMAT (tidak boleh 1 kalimat, tidak boleh lebih dari 3 kalimat).
 
 ═══════════════════════════════════════════════════════════════
 CONTOH FORMAT TEXT YANG BENAR (isi harus sesuai topik aktual):
@@ -305,15 +301,15 @@ Contoh text OPINI yang benar:
 "Kebijakan ini menunjukkan komitmen fiskal yang positif, namun para analis mengingatkan bahwa konsistensi eksekusi di tingkat daerah masih menjadi tantangan nyata yang belum terjawab. Redaksi menilai transparansi mekanisme distribusi dan audit independen menjadi kunci agar kebijakan ini benar-benar berdampak bagi masyarakat lapis bawah."
 
 SEKARANG TULIS NASKAH BERDASARKAN BAHAN DI ATAS.
-WAJIB minimal 380 kata. Periksa ulang hitungan kata sebelum selesai.
+WAJIB berada di rentang 300-500 kata (zona aman).
 Keluarkan HANYA JSON valid tanpa markdown code block, tanpa komentar apapun di luar JSON:
 {{
   "title": "{selected_title}",
-  "word_count": 400,
+  "word_count": 380,
   "h2_headings": [
-    "Tulis sub-judul H2 pertama yang spesifik sesuai topik ini",
-    "Tulis sub-judul H2 kedua yang spesifik sesuai topik ini",
-    "Tulis sub-judul H2 ketiga yang spesifik sesuai topik ini"
+    "Sub-judul H2 Fakta Pertama",
+    "Sub-judul H2 Fakta Kedua",
+    "Sub-judul H2 Fakta Ketiga"
   ],
   "sections": [
     {{
@@ -480,16 +476,16 @@ Keluarkan HANYA JSON valid tanpa markdown code block, tanpa komentar apapun di l
         current_wc = data["word_count"]
 
         for attempt in range(2):  # Maksimal 2x percobaan ekspansi
-            if current_wc >= 380 and has_opini:
-                break  # Sudah cukup, tidak perlu ekspansi
+            if current_wc >= 300 and current_wc <= 500 and has_opini:
+                break  # Sudah cukup di dalam zona aman 300-500 kata
 
-            print(f"[AGENTIC EXPANSION attempt {attempt+1}] {current_wc} kata, has_opini={has_opini}. Target 400-450...")
+            print(f"[AGENTIC EXPANSION attempt {attempt+1}] {current_wc} kata, has_opini={has_opini}. Target zona aman 350-430 kata...")
 
             # Hitung paragraf mana yang pendek
             short_paras = [p for p in flat_paragraphs if len(p.get("text", "").split()) < 40]
             missing_opini = not has_opini
 
-            expand_prompt = f"""Kamu adalah redaktur senior. Naskah ini baru {current_wc} kata, butuh 400-450 kata standar SEO Google 2026.
+            expand_prompt = f"""Kamu adalah redaktur senior. Naskah ini baru {current_wc} kata, butuh 350-430 kata standar zona aman SEO Google 2026 (300-500 kata).
 
 INFO KONTEN:
 - Judul: {selected_title}
@@ -506,8 +502,8 @@ TUGAS EKSPANSI (WAJIB SEMUA):
 3. {'TAMBAHKAN 2 paragraf OPINI jika belum ada' if missing_opini else 'Perkuat kedua paragraf OPINI yang sudah ada dengan analisis lebih dalam'}:
    - OPINI ke-1 (H2_KONTEKS): Dampak/implikasi topik ini bagi publik atau sektor terkait.
    - OPINI ke-2 (H2_TANGGAPAN): Catatan kritis, evaluasi, atau rekomendasi ke depan.
-4. Jika perlu, tambahkan sub-poin di paragraf KRONOLOGI atau KONTEKS tentang aspek yang belum dibahas.
-5. Total hasil WAJIB 400-450 kata. Hitung ulang sebelum selesai.
+4. Pastikan semua fakta dari bahan asli terangkum lengkap.
+5. Total hasil WAJIB berada di zona aman 350-430 kata. Setiap paragraf maksimal 3 kalimat.
 
 KEMBALIKAN JSON LENGKAP (struktur sections sama persis)."""
 
@@ -532,10 +528,37 @@ KEMBALIKAN JSON LENGKAP (struktur sections sama persis)."""
                 print(f"[AGENTIC EXPANSION attempt {attempt+1}] Gagal: {exp_err}")
                 break
 
+        # ══════════════════════════════════════════════════════════════════
+        # ENFORCE KETERBACAAN MOBILE: Maksimal 3 kalimat per paragraf
+        # ══════════════════════════════════════════════════════════════════
+        def _enforce_max_3_sentences(paras):
+            """Pecah paragraf yang melebihi 3 kalimat agar 100% ramah mobile"""
+            result = []
+            for p in paras:
+                txt = p.get("text", "").strip()
+                sentences = [s.strip() for s in re.split(r'(?<=[.!?]["\']?)\s+', txt) if len(s.strip()) > 3]
+                if len(sentences) > 3:
+                    p1 = dict(p)
+                    p1["text"] = " ".join(sentences[:2])
+                    result.append(p1)
+
+                    p2 = dict(p)
+                    p2["text"] = " ".join(sentences[2:])
+                    p2["order"] = p.get("order", 1) + 0.1
+                    result.append(p2)
+                else:
+                    result.append(p)
+            return result
+
+        flat_paragraphs = _enforce_max_3_sentences(flat_paragraphs)
+        data["paragraphs"] = flat_paragraphs
+        all_text = " ".join([p.get("text", "") for p in flat_paragraphs])
+        data["word_count"] = len(all_text.split())
+
         # Bangun full content markdown
         content_lines = []
         last_heading = None
-        for p in data.get("paragraphs", []):
+        for p in flat_paragraphs:
             h = p.get("section_heading")
             if h and h != last_heading:
                 last_heading = h

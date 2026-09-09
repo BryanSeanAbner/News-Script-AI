@@ -225,14 +225,11 @@ Fakta 5W+1H:
     if quotes:
         quotes_text = "\n".join([f"- \"{q.get('quote', '')}\" ({q.get('speaker', speaker_name)})" for q in quotes])
 
-    prompt = f"""Kamu adalah jurnalis investigatif dan redaktur pelaksana senior media nasional.
-Kamu memiliki kemampuan REASONING JURNALISTIK MENDALAM, ANALISIS KEBIJAKAN, dan PENULISAN BERITA SESUAI ALGORITMA GOOGLE NEWS 2026.
-
-TUGAS UTAMA:
-Tulis artikel berita harian 5W+1H yang bernas, mendalam, dan terstruktur berdasarkan bahan wawancara/pernyataan narasumber berikut.
+    prompt = f"""Kamu adalah jurnalis investigatif dan redaktur pelaksana senior media nasional Indonesia.
+Kamu memiliki kemampuan REASONING JURNALISTIK MENDALAM, ANALISIS KEBIJAKAN, dan PENULISAN BERITA STANDAR GOOGLE NEWS 2026.
 
 JUDUL BERITA: {selected_title}
-SUDUT PANDANG (ANGLE): {selected_angle or "Berita Kebijakan & Tanggapan Resmi"}
+SUDUT PANDANG: {selected_angle or "Berita Kebijakan & Tanggapan Resmi"}
 NARASUMBER UTAMA: {speaker_name} ({speaker_title})
 
 {five_w_text}
@@ -240,45 +237,61 @@ NARASUMBER UTAMA: {speaker_name} ({speaker_title})
 KUTIPAN ASLI NARASUMBER:
 {quotes_text if quotes_text else raw_text}
 
-BAHAN MENTAH LENGKAP:
+BAHAN MENTAH:
 \"\"\"
 {raw_text}
 \"\"\"
 
-══════════════════════════════════════════════════════════════════════════
-ATURAN KRITIS (WAJIB DIPATUHI SECARA KETAT — JANGAN SAMPAI MELANGGAR):
-══════════════════════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════════
+ATURAN WAJIB — TIDAK BOLEH DILANGGAR:
+═══════════════════════════════════════════════════════════════
 
-1. DILARANG HANYA COPY-PASTE! LAKUKAN REASONING JURNALISTIK:
-   - AI harus berpikir mandiri: jelaskan konteks latar belakang institusi/kebijakan (misal apa itu program KDMP, siapa Himbara, dampak fiskal APBN, payung hukum terkait).
-   - Uraikan kronologi proses atau mekanisme pelaksanaannya secara sistematis.
+A) FIELD "text" DI SETIAP PARAGRAF HARUS BERUPA KALIMAT BERITA PROSA BIASA.
+   - DILARANG KERAS menulis JSON, tanda kurung kurawal {{}}, tanda kutip string, atau metadata apa pun di dalam field text.
+   - DILARANG menulis placeholder seperti "...", "[isi di sini]", atau teks petunjuk.
+   - Setiap field "text" HARUS diisi kalimat nyata bahasa Indonesia yang siap cetak di media.
 
-2. WAJIB BUAT MINIMAL 2 PARAGRAF BERLABEL [OPINI]:
-   - Berita TIDAK BOLEH hanya berisi [FACT] dan [CONTEXT] saja!
-   - Paragraf [OPINI] ke-1: Berisi analisis editorial mengenai implikasi kebijakan/peristiwa terhadap masyarakat, transparansi, atau stabilitas ekonomi.
-   - Paragraf [OPINI] ke-2: Berisi catatan kritis, evaluasi independen, atau harapan redaksi terhadap pengawasan dan implementasi di lapangan.
+B) REASONING JURNALISTIK MANDIRI — BUKAN COPY-PASTE:
+   - Jelaskan konteks kebijakan/institusi secara analitis (misalnya: latar regulasi, mekanisme hukum, dampak fiskal, sejarah program).
+   - Kembangkan fakta dengan narasi sebab-akibat yang logis berdasarkan pengetahuan jurnalistik.
 
-3. TARGET JUMLAH KATA: 380 - 430 KATA (TOTAL 8 PARAGRAF):
-   - JANGAN TULIS DI BAWAH 350 KATA! (Jika di bawah 350 kata, artikel dianggap 'tipis' oleh Google).
-   - Rincian panjang per seksi:
-     * BAGIAN 1: LEAD 5W1H (1 Paragraf, 40-50 KATA, 3 kalimat) -> Tipe [FACT]
-     * BAGIAN 2: H2 KRONOLOGI (2 Paragraf, total 100-120 KATA) -> Paragraf 1 [FACT] (dengan kutipan narsum #1) + Paragraf 2 [CONTEXT] (uraian kronologi detail)
-     * BAGIAN 3: H2 KONTEKS & ANALISIS (2 Paragraf, total 100-120 KATA) -> Paragraf 1 [CONTEXT] (latar belakang & data pendukung) + Paragraf 2 [OPINI] (analisis dampak & implikasi)
-     * BAGIAN 4: H2 TANGGAPAN & EVALUASI (2 Paragraf, total 80-100 KATA) -> Paragraf 1 [FACT] (pernyataan lanjutan narsum + kutipan #2) + Paragraf 2 [OPINI] (catatan kritis redaksi)
-     * BAGIAN 5: PENUTUP (1 Paragraf, 30-40 KATA) -> Tipe [CONTEXT] (prospek atau update selanjutnya)
+C) WAJIB 2 PARAGRAF BERLABEL "OPINI":
+   - Paragraf OPINI ke-1 (di seksi H2_KONTEKS): Analisis editorial tentang implikasi kebijakan bagi publik/ekonomi/tata kelola.
+   - Paragraf OPINI ke-2 (di seksi H2_TANGGAPAN): Catatan kritis redaksi tentang pengawasan dan mitigasi risiko ke depan.
+   - Paragraf OPINI HARUS berupa kalimat analitis orisinal, bukan pengulangan fakta.
 
-4. KETERBACAAN MOBILE:
-   - Setiap paragraf WAJIB terdiri dari 2 hingga 3 KALIMAT.
-   - Tidak boleh ada paragraf 1 kalimat pendek, dan TIDAK BOLEH lebih dari 3 kalimat.
+D) TARGET KATA: 350 - 480 KATA TOTAL (ZONA AMAN GOOGLE 2026):
+   - Di bawah 350 kata = artikel tipis, tidak terindeks optimal.
+   - Di atas 480 kata = terlalu panjang untuk berita harian mobile.
+   - Target ideal ±400 kata.
+   - Rincian per bagian:
+     * LEAD (Para 1): 40-50 kata, 3 kalimat, tipe FACT
+     * H2 KRONOLOGI (Para 2-3): 90-110 kata total — Para 2 [FACT] 45-55 kata + kutipan narsum, Para 3 [CONTEXT] 45-55 kata
+     * H2 KONTEKS (Para 4-5): 90-110 kata total — Para 4 [CONTEXT] 45-55 kata, Para 5 [OPINI] 45-55 kata
+     * H2 TANGGAPAN (Para 6-7): 80-100 kata total — Para 6 [FACT] 40-50 kata + kutipan narsum ke-2, Para 7 [OPINI] 40-50 kata
+     * PENUTUP (Para 8): 30-40 kata, tipe CONTEXT
 
-Format respons HANYA sebagai JSON valid tanpa markdown code block:
+E) KETERBACAAN MOBILE:
+   - Setiap paragraf: 2 hingga 3 kalimat (tidak boleh 1 kalimat, tidak boleh lebih dari 3).
+
+═══════════════════════════════════════════════════════════════
+CONTOH FORMAT TEXT YANG BENAR (isi harus sesuai topik aktual):
+═══════════════════════════════════════════════════════════════
+Contoh text FACT yang benar:
+"Menteri Keuangan Sri Mulyani menegaskan pemerintah tidak akan mundur dari target defisit APBN 2026 sebesar 2,3 persen dari PDB. Langkah tersebut diambil menyusul tekanan global akibat pelemahan harga komoditas yang berdampak pada penerimaan negara. Penegasan ini disampaikan dalam rapat koordinasi fiskal bersama gubernur bank sentral di Jakarta, Selasa (9/9)."
+
+Contoh text OPINI yang benar:
+"Kebijakan ini menunjukkan komitmen fiskal yang positif, namun para analis mengingatkan bahwa konsistensi eksekusi di tingkat daerah masih menjadi tantangan nyata yang belum terjawab. Redaksi menilai transparansi mekanisme distribusi dan audit independen menjadi kunci agar kebijakan ini benar-benar berdampak bagi masyarakat lapis bawah."
+
+SEKARANG TULIS NASKAH BERITA BERDASARKAN BAHAN DI ATAS.
+Keluarkan HANYA JSON valid tanpa markdown code block, tanpa komentar apapun di luar JSON:
 {{
   "title": "{selected_title}",
-  "word_count": 410,
+  "word_count": 400,
   "h2_headings": [
-    "Sub-judul H2 Kronologi",
-    "Sub-judul H2 Konteks & Analisis Implikasi",
-    "Sub-judul H2 Tanggapan Pejabat & Catatan Redaksi"
+    "Tulis sub-judul H2 pertama yang spesifik sesuai topik ini",
+    "Tulis sub-judul H2 kedua yang spesifik sesuai topik ini",
+    "Tulis sub-judul H2 ketiga yang spesifik sesuai topik ini"
   ],
   "sections": [
     {{
@@ -288,61 +301,61 @@ Format respons HANYA sebagai JSON valid tanpa markdown code block:
         {{
           "order": 1,
           "type": "FACT",
-          "text": "Paragraf pembuka memuat unsur 5W1H secara padat dan jelas sepanjang 40-50 kata dengan tepat tiga kalimat informatif.",
+          "text": "TULIS KALIMAT PROSA BERITA NYATA DI SINI — bukan contoh, bukan placeholder. Minimal 40 kata, maksimal 50 kata, 3 kalimat, memuat who-what-where-when-why-how.",
           "quote": null
         }}
       ]
     }},
     {{
       "section_type": "H2_KRONOLOGI",
-      "heading": "Kronologi dan Detail Penanganan",
+      "heading": "TULIS SUB-JUDUL H2 KRONOLOGI YANG SPESIFIK",
       "paragraphs": [
         {{
           "order": 2,
           "type": "FACT",
-          "text": "Teks kronologi detail peristiwa kalimat pertama dan kedua yang memuat kutipan langsung narasumber...",
-          "quote": "Kutipan langsung narsum pertama..."
+          "text": "TULIS KALIMAT PROSA KRONOLOGI NYATA DI SINI — 45-55 kata, 2-3 kalimat. Sertakan kutipan narsum #1 dalam teks.",
+          "quote": "TULIS KUTIPAN VERBATIM NARSUM PERTAMA DI SINI"
         }},
         {{
           "order": 3,
           "type": "CONTEXT",
-          "text": "Pendalaman kronologis mengenai proses operasional dan langkah teknis yang berlangsung di lapangan secara terperinci...",
+          "text": "TULIS KALIMAT PROSA KONTEKS KRONOLOGI DI SINI — 45-55 kata, 2-3 kalimat, uraian latar belakang mekanisme/proses.",
           "quote": null
         }}
       ]
     }},
     {{
       "section_type": "H2_KONTEKS",
-      "heading": "Konteks Kebijakan dan Dampak Ekonomi",
+      "heading": "TULIS SUB-JUDUL H2 KONTEKS YANG SPESIFIK",
       "paragraphs": [
         {{
           "order": 4,
           "type": "CONTEXT",
-          "text": "Uraian konteks latar belakang aturan, data historis pendukung, serta peran institusi terkait dalam perkara ini...",
+          "text": "TULIS KALIMAT PROSA KONTEKS KEBIJAKAN DI SINI — 45-55 kata, 2-3 kalimat, data historis dan regulasi pendukung.",
           "quote": null
         }},
         {{
           "order": 5,
           "type": "OPINI",
-          "text": "Analisis editorial menilai bahwa kebijakan ini menjadi sinyal positif stabilitas, kendati transparansi tata kelola tetap menjadi tantangan mendesak...",
+          "text": "TULIS KALIMAT ANALISIS EDITORIAL OPINI DI SINI — 45-55 kata, 2-3 kalimat, analisis implikasi kebijakan bagi publik.",
           "quote": null
         }}
       ]
     }},
     {{
       "section_type": "H2_TANGGAPAN",
-      "heading": "Tanggapan Pejabat dan Catatan Kritis",
+      "heading": "TULIS SUB-JUDUL H2 TANGGAPAN YANG SPESIFIK",
       "paragraphs": [
         {{
           "order": 6,
           "type": "FACT",
-          "text": "Pernyataan tegas pejabat atau aparat penegak hukum mengenai sanksi atau komitmen penyelesaian...",
-          "quote": "Kutipan langsung narsum kedua..."
+          "text": "TULIS KALIMAT PROSA TANGGAPAN NARSUM DI SINI — 40-50 kata, 2-3 kalimat. Sertakan kutipan narsum #2 dalam teks.",
+          "quote": "TULIS KUTIPAN VERBATIM NARSUM KEDUA DI SINI"
         }},
         {{
           "order": 7,
           "type": "OPINI",
-          "text": "Redaksi mencatat bahwa ketegasan sikap ini perlu dibarengi mekanisme pengawasan independen agar tidak terjadi preseden serupa di masa depan...",
+          "text": "TULIS CATATAN KRITIS REDAKSI DI SINI — 40-50 kata, 2-3 kalimat, evaluasi independen dan harapan pengawasan ke depan.",
           "quote": null
         }}
       ]
@@ -354,13 +367,12 @@ Format respons HANYA sebagai JSON valid tanpa markdown code block:
         {{
           "order": 8,
           "type": "CONTEXT",
-          "text": "Paragraf penutup sepanjang 30-40 kata yang merangkum arah perkembangan kasus serta agenda lanjutan pemerintah ke depan.",
+          "text": "TULIS KALIMAT PENUTUP PROSPEK DI SINI — 30-40 kata, 2 kalimat, merangkum agenda dan perkembangan ke depan.",
           "quote": null
         }}
       ]
     }}
   ],
-  "content": "Isi naskah berita lengkap berformat rapi dengan judul H2 (format markdown ## Subjudul)...",
   "seo_check": {{
     "word_count_target_met": true,
     "lead_5w1h_present": true,
@@ -393,30 +405,61 @@ Format respons HANYA sebagai JSON valid tanpa markdown code block:
         data["word_count"] = len(all_text.split())
 
         # ══════════════════════════════════════════════════════════════════
-        # AGENTIC SELF-EXPANSION: Jika hasil masih < 350 kata atau kurang OPINI
+        # VALIDASI: deteksi paragraf berisi JSON mentah (bug LLM) dan hapus
+        # ══════════════════════════════════════════════════════════════════
+        clean_paragraphs = []
+        for p in flat_paragraphs:
+            txt = p.get("text", "")
+            # Jika text mengandung tanda JSON struktural, berarti LLM salah output
+            looks_like_json = (
+                txt.strip().startswith('{') or
+                txt.strip().startswith('[') or
+                '"section_type"' in txt or
+                '"h2_headings"' in txt or
+                '"word_count"' in txt or
+                '"sections"' in txt or
+                '"paragraphs"' in txt
+            )
+            if not looks_like_json and len(txt.strip()) > 20:
+                clean_paragraphs.append(p)
+        
+        if clean_paragraphs:
+            flat_paragraphs = clean_paragraphs
+            data["paragraphs"] = flat_paragraphs
+        
+        # Recalculate after cleaning
+        all_text = " ".join([p.get("text", "") for p in flat_paragraphs])
+        data["word_count"] = len(all_text.split())
+
+        # ══════════════════════════════════════════════════════════════════
+        # AGENTIC SELF-EXPANSION/TRIM: Zona aman 350-480 kata
         # ══════════════════════════════════════════════════════════════════
         has_opini = any(p.get("type") == "OPINI" for p in flat_paragraphs)
-        if data["word_count"] < 350 or not has_opini:
-            print(f"[AGENTIC EXPANSION] Output {data['word_count']} kata (has_opini={has_opini}). Mengembangkan naskah ke zona 380-430 kata...")
-            expand_prompt = f"""Kamu adalah redaktur pelaksana senior. Naskah berita berikut saat ini baru memiliki {data['word_count']} kata dan memerlukan pendalaman analitis jurnalistik agar memenuhi standar Google News 2026 (target 380 - 430 KATA).
+        current_wc = data["word_count"]
+        
+        if current_wc < 350 or not has_opini:
+            print(f"[AGENTIC EXPANSION] Output {current_wc} kata (has_opini={has_opini}). Mengembangkan ke 380-460 kata...")
+            expand_prompt = f"""Kamu adalah redaktur pelaksana senior media nasional Indonesia.
+Naskah berita ini masih {current_wc} kata dan perlu diperkaya hingga 380-460 kata standar Google News 2026.
 
-NASKAH SAAT INI:
-{json.dumps(data.get('sections', []), indent=2, ensure_ascii=False)}
-
-INFORMASI BAHAN TAMBAHAN:
+INFORMASI:
 - Judul: {selected_title}
 - Narsum: {speaker_name} ({speaker_title})
 - Bahan mentah: {raw_text}
 
-INSTRUKSI EXPANSION (WAJIB):
-1. Perpanjang tiap paragraf yang terlalu singkat sehingga setiap paragraf memiliki 45 - 60 kata (terdiri dari 2-3 kalimat mobile-friendly).
-2. Perkaya seksi Kronologi dengan detail peristiwa dan tahapan tindakannya.
-3. WAJIB sertakan 2 PARAGRAF BERLABEL [OPINI]:
-   - 1 paragraf [OPINI] di Seksi H2 Konteks: Analisis implikasi kebijakan/peristiwa bagi publik/ekonomi.
-   - 1 paragraf [OPINI] di Seksi H2 Tanggapan: Catatan kritis dan pandangan redaksi mengenai mitigasi risiko kedepan.
-4. Total artikel HARUS mencapai 380 - 430 KATA. Dilarang di bawah 350 kata!
+NASKAH SAAT INI (JSON sections):
+{json.dumps(data.get('sections', []), indent=2, ensure_ascii=False)}
 
-KEMBALIKAN HANYA FORMAT JSON LENGKAP DENGAN STRUKTUR SAMA (sections, paragraphs, word_count)."""
+TUGAS EKSPANSI WAJIB:
+1. SETIAP field "text" HARUS berisi kalimat prosa berita bahasa Indonesia yang nyata.
+   DILARANG menulis JSON, kurung kurawal, atau metadata apapun di dalam field text.
+2. Perpanjang tiap paragraf pendek hingga 45-60 kata (2-3 kalimat mobile-friendly).
+3. Tambahkan 2 PARAGRAF BERLABEL "OPINI" jika belum ada:
+   - OPINI ke-1 di section H2_KONTEKS: Analisis editorial implikasi kebijakan bagi publik.
+   - OPINI ke-2 di section H2_TANGGAPAN: Catatan kritis redaksi soal mitigasi dan pengawasan.
+4. Total hasil: 380-460 KATA (jangan lebih dari 480 kata).
+
+KEMBALIKAN JSON LENGKAP DENGAN STRUKTUR sections YANG SAMA."""
 
             expanded_result = provider.generate(expand_prompt, max_tokens=6000)
             try:
@@ -428,15 +471,19 @@ KEMBALIKAN HANYA FORMAT JSON LENGKAP DENGAN STRUKTUR SAMA (sections, paragraphs,
                         p_copy = dict(p)
                         p_copy["section_heading"] = sec_heading
                         p_copy["section_type"] = sec.get("section_type")
+                        # Skip JSON-contaminated text
+                        txt = p_copy.get("text", "")
+                        if txt.strip().startswith('{') or '"section_type"' in txt:
+                            continue
                         flat_exp.append(p_copy)
                 exp_text = " ".join([p.get("text", "") for p in flat_exp])
                 exp_words = len(exp_text.split())
                 
-                # Gunakan hasil ekspansi jika lebih panjang
-                if exp_words > data["word_count"]:
+                if exp_words > current_wc:
                     expanded_data["paragraphs"] = flat_exp
                     expanded_data["word_count"] = exp_words
                     data = expanded_data
+                    flat_paragraphs = flat_exp
                     print(f"[AGENTIC EXPANSION] Berhasil dikembangkan menjadi {exp_words} kata!")
             except Exception as exp_err:
                 print(f"[AGENTIC EXPANSION] Gagal parse ekspansi: {exp_err}")
@@ -455,26 +502,67 @@ KEMBALIKAN HANYA FORMAT JSON LENGKAP DENGAN STRUKTUR SAMA (sections, paragraphs,
         return data
     except Exception as e:
         print(f"JSON parsing error in quick news: {e}")
-        # Fallback
-        paragraphs = [
-            {"order": 1, "type": "FACT", "text": result_text[:400], "quote": None},
-            {"order": 2, "type": "CONTEXT", "text": result_text[400:], "quote": None}
-        ]
-        return {
-            "title": selected_title,
-            "content": result_text,
-            "word_count": len(result_text.split()),
-            "paragraphs": paragraphs,
-            "h2_headings": ["Kronologi Kejadian", "Tanggapan Pejabat"],
-            "seo_check": {
-                "word_count_target_met": True,
-                "lead_5w1h_present": True,
-                "h2_count": 2,
-                "quotes_count": 1,
-                "mobile_friendly": True,
-                "estimated_seo_score": 85
-            }
-        }
+        # Coba satu kali retry dengan prompt yang lebih sederhana
+        retry_prompt = f"""Kamu adalah jurnalis. Tulis berita {selected_title} sepanjang 380-430 kata dalam format JSON berikut.
+
+PENTING: Setiap field "text" HARUS berisi kalimat prosa berita bahasa Indonesia yang nyata. JANGAN isi dengan JSON, metadata, atau placeholder.
+
+BAHAN: {raw_text}
+
+Output JSON:
+{{
+  "title": "{selected_title}",
+  "word_count": 400,
+  "h2_headings": ["Kronologi Kejadian", "Konteks dan Analisis", "Tanggapan dan Catatan Redaksi"],
+  "sections": [
+    {{"section_type": "LEAD", "heading": null, "paragraphs": [{{"order": 1, "type": "FACT", "text": "TULIS PARAGRAF LEAD 40-50 KATA DI SINI", "quote": null}}]}},
+    {{"section_type": "H2_KRONOLOGI", "heading": "Kronologi Kejadian", "paragraphs": [
+      {{"order": 2, "type": "FACT", "text": "TULIS PARAGRAF KRONOLOGI 45-55 KATA DI SINI", "quote": "KUTIPAN NARSUM"}},
+      {{"order": 3, "type": "CONTEXT", "text": "TULIS PARAGRAF KONTEKS KRONOLOGI 45-55 KATA DI SINI", "quote": null}}
+    ]}},
+    {{"section_type": "H2_KONTEKS", "heading": "Konteks dan Analisis", "paragraphs": [
+      {{"order": 4, "type": "CONTEXT", "text": "TULIS PARAGRAF KONTEKS KEBIJAKAN 45-55 KATA DI SINI", "quote": null}},
+      {{"order": 5, "type": "OPINI", "text": "TULIS ANALISIS OPINI EDITORIAL 45-55 KATA DI SINI", "quote": null}}
+    ]}},
+    {{"section_type": "H2_TANGGAPAN", "heading": "Tanggapan dan Catatan Redaksi", "paragraphs": [
+      {{"order": 6, "type": "FACT", "text": "TULIS PARAGRAF TANGGAPAN 40-50 KATA DI SINI", "quote": "KUTIPAN NARSUM KE-2"}},
+      {{"order": 7, "type": "OPINI", "text": "TULIS CATATAN KRITIS REDAKSI 40-50 KATA DI SINI", "quote": null}}
+    ]}},
+    {{"section_type": "PENUTUP", "heading": null, "paragraphs": [{{"order": 8, "type": "CONTEXT", "text": "TULIS PARAGRAF PENUTUP 30-40 KATA DI SINI", "quote": null}}]}}
+  ],
+  "seo_check": {{"word_count_target_met": true, "lead_5w1h_present": true, "has_opinion_paragraphs": true, "h2_count": 3, "quotes_count": 2, "mobile_friendly": true, "estimated_seo_score": 100}}
+}}"""
+        try:
+            retry_text = provider.generate(retry_prompt, max_tokens=6000)
+            retry_data = json.loads(extract_json(retry_text))
+            flat_retry = []
+            for sec in retry_data.get("sections", []):
+                sec_heading = sec.get("heading")
+                for p in sec.get("paragraphs", []):
+                    p_copy = dict(p)
+                    p_copy["section_heading"] = sec_heading
+                    p_copy["section_type"] = sec.get("section_type")
+                    txt = p_copy.get("text", "")
+                    if not txt.strip().startswith('{') and len(txt.strip()) > 20:
+                        flat_retry.append(p_copy)
+            retry_data["paragraphs"] = flat_retry
+            retry_text_all = " ".join([p.get("text", "") for p in flat_retry])
+            retry_data["word_count"] = len(retry_text_all.split())
+            
+            # Build content
+            content_lines = []
+            last_h = None
+            for p in flat_retry:
+                h = p.get("section_heading")
+                if h and h != last_h:
+                    last_h = h
+                    content_lines.append(f"\n## {h}\n")
+                content_lines.append(p.get("text", ""))
+            retry_data["content"] = "\n\n".join(content_lines).strip()
+            return retry_data
+        except Exception as retry_err:
+            print(f"Retry also failed: {retry_err}")
+            raise Exception(f"AI gagal menghasilkan naskah berita yang valid. Coba lagi atau periksa koneksi API. Detail: {str(e)}")
 
 
 class handler(BaseHTTPRequestHandler):

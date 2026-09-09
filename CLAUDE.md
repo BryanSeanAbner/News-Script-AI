@@ -1,19 +1,21 @@
-# CLAUDE.md — NewsScript AI
+# CLAUDE.md — NewsScript AI v2.0
 
 > Panduan konteks untuk AI coding assistant (Claude, Gemini, Copilot, dll).
-> Baca file ini **pertama kali** sebelum menyentuh kode apapun di repository ini.
+> Versi: 2.0 (Google News 2026 SEO Formula & Mode Cepat 3-Slide)
 
 ---
 
 ## 📌 Project Overview
 
-**NewsScript AI** adalah platform jurnalisme berbantuan AI yang mengotomatisasi proses pembuatan berita dari referensi artikel yang ada. Pipeline terdiri dari **10 langkah** yang menggabungkan tiga titik keputusan manusia (_human gates_) dengan beberapa LLM call yang terstruktur.
+**NewsScript AI v2.0** adalah platform jurnalisme berbantuan AI yang mengubah transkrip wawancara, kutipan narasumber, atau siaran pers langsung menjadi naskah berita 5W+1H berformula **SEO Google 2026**.
 
-**Tujuan utama:**
-
-- Membantu editor menemukan sudut pandang (angle) berita yang belum dibahas
-- Menghasilkan draft artikel yang _grounded_ (semua klaim bersumber dari fakta terverifikasi)
-- Menjaga kontrol editorial tetap di tangan manusia pada gate-gate kritikal
+**Fitur Utama:**
+- **Rumus Jumlah Kata SEO Google 2026**: Target 350–500 kata (sweet spot ±400 kata), Lead 5W1H (40–50 kata), 3 Sub-judul H2 (Kronologi, Konteks & Bukti, Tanggapan Pejabat/Sanksi), 2 kutipan langsung narsum, penutup 30 kata, dan kaidah keterbacaan mobile (maksimal 3 kalimat per paragraf).
+- **Alur Cepat 3-Slide**:
+  - **Slide 1**: Input Kutipan / Wawancara Narsum
+  - **Slide 2**: Pratinjau 5W+1H, Sudut Pandang (Angle) & Pilihan Judul SEO
+  - **Slide 3**: Naskah Berita 5W+1H Jadi + Editorial Review Terintegrasi (inline edit) + Kalkulator Kata SEO Realtime
+- **Kalkulator Kata & Skor SEO 2026**: Widget live yang menganalisis panjang kata, kerapatan kalimat mobile, dan skor SEO 0–100%.
 
 ---
 
@@ -21,183 +23,64 @@
 
 ```
 news-script-ai/
-├── CLAUDE.md                  ← File ini
-├── ARCHITECTURE.md            ← Arsitektur sistem lengkap
-├── PIPELINE_RULES.md          ← Aturan wajib pipeline
-├── Design.md                  ← Spesifikasi desain React
+├── CLAUDE.md                  ← Panduan project ini
+├── package.json               ← Root scripts (dev, build, preview)
+├── vercel.json                ← Konfigurasi Vercel deployment
 ├── .env.example               ← Template environment variables
 │
-├── schema/                    ← JSON Schema per pipeline step
-│   ├── article_input.json     ← Step 1 input
-│   ├── fact_extraction.json   ← Step 2 output
-│   ├── gap_analysis.json      ← Step 3 output
-│   ├── angle_mapping.json     ← Step 4 output
-│   ├── title_options.json     ← Step 6 output
-│   ├── draft.json             ← Step 7 output
-│   ├── grounding_result.json  ← Step 8 output
-│   ├── session.json           ← Full session state
-│   └── publish_output.json    ← Step 10 output
+├── api/                       ← Stateless Serverless Functions (Python)
+│   ├── quick-news.py          ← Endpoint /api/quick-news (3-Slide generator)
+│   ├── draft.py               ← Endpoint /api/draft (Google 2026 SEO formula)
+│   ├── health.py              ← Endpoint /api/health
+│   └── requirements.txt       ← Python dependencies
 │
-├── frontend/                  ← React app (Vite)
-│   ├── src/
-│   │   ├── components/        ← Reusable UI components
-│   │   ├── pages/             ← Halaman per pipeline step
-│   │   ├── stores/            ← Zustand state stores
-│   │   ├── hooks/             ← Custom React hooks
-│   │   ├── services/          ← API call functions
-│   │   ├── styles/            ← CSS files (GitHub Light)
-│   │   └── utils/             ← Helper functions
-│   └── public/
-│
-└── backend/                   ← Python FastAPI
-    ├── main.py                ← FastAPI app entry point
-    ├── pipeline/              ← Pipeline orchestrator & step runners
-    ├── adapters/              ← AI provider adapters (Gemini, Grok)
-    ├── schemas/               ← Pydantic models
-    ├── routers/               ← FastAPI route handlers
-    ├── data/
-    │   ├── sessions/          ← JSON session files
-    │   └── published/         ← Artikel yang sudah dipublish
-    └── utils/                 ← Helper functions backend
+└── frontend/                  ← React 18 App (Vite)
+    ├── src/
+    │   ├── components/
+    │   │   ├── WordCalculatorSEO.jsx ← Widget Kalkulator Kata & Skor SEO
+    │   │   ├── Layout.jsx            ← App Shell
+    │   │   ├── Sidebar.jsx           ← Navigasi utama
+    │   │   └── UI.jsx                ← Reusable UI atoms
+    │   ├── pages/
+    │   │   ├── DashboardPage.jsx     ← Dashboard & Riwayat Naskah
+    │   │   ├── QuickNewsPage.jsx     ← Halaman Alur 3-Slide
+    │   │   ├── ArticleDetailPage.jsx ← Halaman Detail Naskah
+    │   │   └── SessionsPage.jsx      ← Riwayat Session
+    │   ├── stores/
+    │   │   └── sessionStore.js       ← Zustand state store (client-side persist)
+    │   ├── services/
+    │   │   └── api.js                ← API client
+    │   ├── styles/                   ← Vanilla CSS (GitHub Light Design System)
+    │   └── App.jsx                   ← Routing
+    └── package.json
 ```
 
 ---
 
-## 🔄 Pipeline Steps
-
-| Step | Nama                   | Type               | AI Provider      |
-| ---- | ---------------------- | ------------------ | ---------------- |
-| 1    | Editor Input Artikel   | Human Gate         | —                |
-| 2    | Fact Extraction        | LLM (murah)        | **Gemini Flash** |
-| 3    | Gap Analysis           | LLM (murah)        | **Gemini Flash** |
-| 4    | Angle Mapping          | LLM (murah, batch) | **Gemini Flash** |
-| 5    | Editor Pilih Angle     | Human Gate         | —                |
-| 6    | Title Generation       | LLM (murah)        | **Gemini Flash** |
-| 7    | Draft Generation       | LLM (mahal)        | **Grok-3**       |
-| 8    | Evidence/Grounding Chk | LLM (murah)        | **Gemini Flash** |
-| 9    | Human Editorial Review | Human Gate         | —                |
-| 10   | Publish                | Output             | —                |
-
-**Revision Loops:**
-
-- `LOOP_SMALL` : Step 9 → Step 7 (revisi draft, angle tetap)
-- `LOOP_LARGE` : Step 9 → Step 4 (ganti angle, mulai ulang dari mapping)
-
----
-
-## ⚙️ Tech Stack
+## ⚙️ Tech Stack & AI Provider
 
 ### Frontend
-
 - **Framework**: React 18 + Vite
 - **Routing**: React Router v6
-- **State**: Zustand
+- **State**: Zustand (localStorage persist)
 - **Styling**: Vanilla CSS (GitHub Light Design System)
-- **HTTP Client**: Fetch API (native)
 
-### Backend
-
-- **Framework**: Python FastAPI
-- **AI — Step 2,3,4,6,8**: `google-generativeai` SDK → Gemini Flash models
-- **AI — Step 7 ONLY**: OpenAI-compatible client → xAI Grok API
-- **Validation**: Pydantic v2
-- **Config**: python-dotenv
-- **Storage**: File-based JSON (`data/sessions/`, `data/published/`)
+### Backend / Serverless
+- **Runtime**: Python 3.9+ Vercel Serverless Functions
+- **AI Multi-Provider Fallback**:
+  - Primary: **Groq Cloud (Llama 3.3 70B)**
+  - Secondary: **Google Gemini 2.0 Flash**
+  - Fallback: **OpenRouter (Llama 3.3 70B)**
 
 ---
 
-## 📏 Coding Conventions
+## 📏 Aturan Rumus SEO Google 2026
 
-### Bahasa
-
-- **Komentar bisnis logic** : Bahasa Indonesia (agar editor non-teknis bisa baca)
-- **Komentar teknis / code** : Bahasa Inggris
-- **Nama variabel & fungsi** : Bahasa Inggris (snake_case backend, camelCase frontend)
-- **Nama file** : kebab-case di frontend, snake_case di backend
-
-### Frontend (React)
-
-```javascript
-// ✅ BENAR — functional component, named export
-export function ArticleInputPage() { ... }
-
-// ✅ BENAR — custom hook untuk API call
-function useFactExtraction(sessionId) { ... }
-
-// ❌ SALAH — jangan pakai class component
-class ArticleInputPage extends React.Component { ... }
-```
-
-### Backend (Python)
-
-```python
-# ✅ BENAR — async function untuk semua AI calls
-async def run_fact_extraction(article_text: str) -> FactExtractionResult:
-    ...
-
-# ✅ BENAR — Pydantic model untuk semua data exchange
-class FactExtractionResult(BaseModel):
-    facts: list[Fact]
-    extracted_at: datetime
-
-# ❌ SALAH — jangan return dict mentah, selalu pakai Pydantic
-async def run_fact_extraction(article_text: str) -> dict:
-    ...
-```
-
-### AI Provider Rules (KRITIS)
-
-```
-Gemini → Step 2, 3, 4, 6, 8 SAJA
-Grok   → Step 7 SAJA
-
-DILARANG menukar assignment ini tanpa mengubah PIPELINE_RULES.md terlebih dahulu.
-```
-
----
-
-## 🚦 DO / DON'T List
-
-### ✅ DO
-
-- Selalu validasi output JSON dari LLM menggunakan schema di `schema/`
-- Selalu gunakan retry dengan exponential backoff untuk semua AI calls
-- Selalu simpan state session setelah setiap step selesai
-- Gunakan Pydantic models untuk semua data yang melewati API boundary
-- Beri label `[HUMAN GATE]` di komentar untuk setiap step yang butuh manusia
-- Grounding check (Step 8) WAJIB lulus sebelum draft bisa masuk Step 9
-
-### ❌ DON'T
-
-- Jangan simpan API key di frontend atau commit ke git
-- Jangan skip Step 8 (Grounding Check) meskipun dalam mode development
-- Jangan gunakan Grok untuk step selain Step 7
-- Jangan hardcode model name — selalu baca dari environment variable
-- Jangan gabungkan multiple step dalam satu LLM call (kecuali Step 4 batch)
-- Jangan generate klaim di draft yang tidak ada di `fact_extraction.json`
-
----
-
-## 🔑 Environment Variables
-
-Lihat `.env.example` untuk daftar lengkap. Variables paling penting:
-
-```bash
-GEMINI_API_KEY=              # Google Gemini API key
-GROK_API_KEY=                # xAI Grok API key
-GEMINI_MODEL=                # Default: gemini-2.0-flash
-GROK_MODEL=                  # Default: grok-3
-GROUNDING_THRESHOLD_PASS=    # Default: 0.85 — min score lanjut ke Step 9
-```
-
----
-
-## 📚 Referensi Dokumen
-
-| Dokumen                              | Tujuan                      |
-| ------------------------------------ | --------------------------- |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Arsitektur teknis detail     |
-| [PIPELINE_RULES.md](./PIPELINE_RULES.md) | Aturan wajib setiap step |
-| [Design.md](./Design.md)             | Spesifikasi UI/UX React     |
-| [schema/session.json](./schema/session.json) | Master schema session |
-| [.env.example](./.env.example)       | Template konfigurasi        |
+1. **Jumlah Kata**: 350–500 kata (ZONA AMAN PALING SEO).
+2. **Struktur Wajib**:
+   - Paragraf 1 (Lead 5W1H): 40–50 kata.
+   - H2 #1 (Kronologi): 100–120 kata + kutipan #1.
+   - H2 #2 (Konteks & Bukti): 100–120 kata.
+   - H2 #3 (Tanggapan Pejabat & Hukuman): 80–100 kata + kutipan #2.
+   - Penutup: ±30 kata dasar hukum/update.
+3. **Mobile Friendly**: Maksimal 3 kalimat per paragraf.

@@ -182,7 +182,7 @@ def generate_draft(angle_title: str, article_title: str, facts: List[Dict]) -> D
     
     facts_text = "\n".join([f"- {f.get('text', '')}" for f in facts])
     
-    prompt = f"""Tulis draft artikel berita investigatif dengan struktur berlabel.
+    prompt = f"""Tulis draft artikel berita dengan struktur berlabel dan RUMUS JUMLAH KATA SEO GOOGLE 2026.
 
 Judul: {article_title}
 Sudut Pandang: {angle_title}
@@ -190,38 +190,46 @@ Sudut Pandang: {angle_title}
 Fakta yang tersedia:
 {facts_text}
 
-Tulis artikel 600-800 kata dengan struktur:
-- Setiap paragraf diberi label [FACT], [CONTEXT], atau [OPINI]
-- [FACT]: Paragraf berisi fakta terverifikasi dari sumber
-- [CONTEXT]: Paragraf berisi konteks atau analisis (perlu validasi AI)
-- [OPINI]: Paragraf berisi opini atau spekulasi (perlu konfirmasi editor)
+ATURAN WAJIB RUMUS SEO GOOGLE 2026 (JUMLAH KATA & STRUKTUR ±400 KATA):
+1. TOTAL PANJANG ARTIKEL: 350 - 500 KATA (ZONA AMAN PALING SEO, target ideal ~400 kata).
+2. STRUKTUR ARTIKEL:
+   - Paragraf 1 (Lead 5W1H): 40-50 kata to the point (siapa, apa, kapan, di mana, mengapa).
+   - H2 ke-1 + Isi (Kronologi): 100-120 kata + kutipan langsung narasumber pertama.
+   - H2 ke-2 + Isi (Konteks & Bukti): 100-120 kata berisi data pendukung/latar belakang.
+   - H2 ke-3 + Isi (Tanggapan Pejabat & Hukuman/Sanksi): 80-100 kata + kutipan langsung kedua.
+   - Penutup: ~30 kata dasar hukum/update perkembangan terkini.
+3. KETERBACAAN MOBILE: Setiap paragraf MAKSIMAL 3 KALIMAT agar nyaman dibaca di layar HP (anti bounce rate tinggi).
+4. Setiap paragraf WAJIB diberi label [FACT], [CONTEXT], atau [OPINI]:
+   - [FACT]: Paragraf berisi fakta terverifikasi dari sumber (sertakan "quote" verbatim dan "source_fact_id" jika ada)
+   - [CONTEXT]: Paragraf berisi konteks atau latar belakang
+   - [OPINI]: Paragraf berisi interpretasi atau analisis situasi
 
 PENTING: Respons harus berupa JSON lengkap dan valid. Jangan potong di tengah.
 
 Format respons sebagai JSON (tanpa markdown):
 {{
-    "content": "Isi artikel lengkap dengan paragraf berlabel",
+    "content": "Isi artikel lengkap dengan sub-judul H2 (format markdown ## Subjudul) dan paragraf berlabel",
     "paragraphs": [
         {{
             "order": 1,
             "type": "FACT",
-            "text": "Paragraf pertama tanpa label di teks",
+            "text": "Paragraf pembuka lead 5W1H tanpa label di dalam teks (maks 3 kalimat)...",
             "source_fact_id": "fact_1",
-            "quote": "kutipan verbatim dari sumber (opsional)"
+            "quote": null
         }},
         {{
             "order": 2,
-            "type": "CONTEXT",
-            "text": "Paragraf kedua",
-            "source_fact_id": null,
-            "quote": null
+            "type": "FACT",
+            "text": "Teks kronologi dengan kutipan langsung narsum...",
+            "source_fact_id": "fact_2",
+            "quote": "kutipan verbatim narsum"
         }}
     ],
-    "word_count": 650,
+    "word_count": 412,
     "label_stats": {{
-        "FACT": 5,
-        "CONTEXT": 3,
-        "OPINI": 2
+        "FACT": 4,
+        "CONTEXT": 2,
+        "OPINI": 1
     }}
 }}"""
     

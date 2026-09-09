@@ -35,67 +35,14 @@ function IconHistory() {
   );
 }
 
-// ── Pipeline Step Config ───────────────────────────────────────────────────
-
-const PIPELINE_STEPS = [
-  { num: 1, label: 'Input Artikel', gate: false },
-  { num: 2, label: 'Fact Extraction', gate: false },
-  { num: 3, label: 'Gap Analysis', gate: false },
-  { num: 4, label: 'Pilih Angle & Judul', gate: true },
-  { num: 5, label: 'Draft Generation', gate: false },
-  { num: 6, label: 'Grounding Check', gate: false },
-  { num: 7, label: 'Editorial Review', gate: true },
-  { num: 8, label: 'Publish', gate: false },
-];
-
-function getIconClass(status, isCurrent) {
-  if (isCurrent) return 'active';
-  if (status === 'done' || status === 'approved') return 'done';
-  if (status === 'running') return 'running';
-  if (status === 'error') return 'error';
-  if (status === 'waiting' || status === 'revision_small' || status === 'revision_large') return 'human';
-  return '';
-}
-
-function getStepClass(status, isCurrent, isGate) {
-  if (isCurrent) return 'active';
-  if (status === 'done' || status === 'approved') return 'done';
-  if (status === 'pending' && !isCurrent) return 'disabled';
-  if (isGate && (status === 'waiting' || status === 'pending')) return 'human-gate';
-  return '';
-}
-
-function StepIcon({ num, iconClass }) {
-  if (iconClass === 'done') return (
-    <span className="step-icon done">
-      <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-        <path d="M10.28 2.28a.75.75 0 0 0-1.06 0L4.75 6.75 2.78 4.78a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5a.75.75 0 0 0 0-1.06Z"/>
-      </svg>
-    </span>
-  );
-  if (iconClass === 'error') return <span className="step-icon error">!</span>;
-  return <span className={`step-icon ${iconClass}`}>{num}</span>;
-}
-
 // ── Main Component ─────────────────────────────────────────────────────────
 
 export function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { id } = useParams();
-  const currentSession = useSessionStore(s => s.currentSession);
-  const currentStep = currentSession?.current_step;
-
-  // Deteksi apakah sedang dalam session (URL mengandung /session/:id/)
-  const isInSession = /\/session\/[^/]+\/step\//.test(location.pathname);
 
   function navTo(path) {
     navigate(path);
-    onClose?.();
-  }
-
-  function navigateToStep(step) {
-    if (id) navigate(`/session/${id}/step/${step}`);
     onClose?.();
   }
 
@@ -114,7 +61,7 @@ export function Sidebar({ isOpen, onClose }) {
 
         {/* ── MAIN NAVIGATION ── */}
         <div className="sidebar-section">
-          <div className="sidebar-header">Menu</div>
+          <div className="sidebar-header">Menu Utama</div>
           <nav>
             <ul className="pipeline-steps" role="list">
 
@@ -130,15 +77,15 @@ export function Sidebar({ isOpen, onClose }) {
                 </button>
               </li>
 
-              {/* Buat Naskah */}
+              {/* Buat Berita 5W+1H (3 Slide) */}
               <li>
                 <button
-                  className={`pipeline-step nav-item ${isActive('/new') || isInSession ? 'active' : ''}`}
+                  className={`pipeline-step nav-item ${isActive('/new') || isActive('/quick-news') ? 'active' : ''}`}
                   onClick={() => navTo('/new')}
-                  aria-current={(isActive('/new') || isInSession) ? 'page' : undefined}
+                  aria-current={(isActive('/new') || isActive('/quick-news')) ? 'page' : undefined}
                 >
                   <span className="nav-icon"><IconPen /></span>
-                  <span className="sidebar-label">Buat Naskah</span>
+                  <span className="sidebar-label">Buat Berita 5W+1H</span>
                 </button>
               </li>
 
@@ -150,7 +97,7 @@ export function Sidebar({ isOpen, onClose }) {
                   aria-current={isActive('/sessions') ? 'page' : undefined}
                 >
                   <span className="nav-icon"><IconHistory /></span>
-                  <span className="sidebar-label">History</span>
+                  <span className="sidebar-label">Riwayat Naskah</span>
                 </button>
               </li>
 
@@ -158,55 +105,13 @@ export function Sidebar({ isOpen, onClose }) {
           </nav>
         </div>
 
-        {/* ── PIPELINE STEPS (hanya tampil saat dalam session) ── */}
-        {isInSession && (
-          <div className="sidebar-section sidebar-pipeline-section">
-            <div className="sidebar-header">Pipeline (8 Steps)</div>
-            <nav>
-              <ul className="pipeline-steps" role="list">
-                {PIPELINE_STEPS.map(({ num, label, gate }) => {
-                  const statusKey = `step_${num}`;
-                  const status = currentSession?.step_statuses?.[statusKey] ?? 'pending';
-                  const isCurrent = currentStep === num;
-                  const iconClass = getIconClass(status, isCurrent);
-                  const stepClass = getStepClass(status, isCurrent, gate);
-
-                  return (
-                    <li key={num}>
-                      <button
-                        className={`pipeline-step ${stepClass}`}
-                        onClick={() => navigateToStep(num)}
-                        aria-current={isCurrent ? 'step' : undefined}
-                        title={label}
-                      >
-                        <StepIcon num={num} iconClass={iconClass} />
-                        <span className="sidebar-label">{label}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+        {/* Footer info */}
+        <div className="sidebar-footer">
+          <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', padding: 'var(--space-2)' }}>
+            Google News SEO 2026
+            <div style={{ fontWeight: 600, color: 'var(--color-fg-default)' }}>NewsScript AI v2.0</div>
           </div>
-        )}
-
-        {/* ── SESSION INFO (hanya saat dalam session) ── */}
-        {isInSession && currentSession && (
-          <div className="sidebar-footer">
-            <div className="session-info">
-              <div style={{ fontWeight: 'var(--font-medium)', fontSize: 'var(--text-xs)', marginBottom: '4px' }}>
-                Session aktif
-              </div>
-              <div className="session-id">{currentSession.session_id.slice(0, 8)}…</div>
-              {currentSession.revision_count?.small > 0 && (
-                <div style={{ marginTop: '4px', fontSize: 'var(--text-xs)', color: 'var(--color-attention-fg)' }}>
-                  Revisi kecil: {currentSession.revision_count.small}×
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
+        </div>
       </aside>
     </>
   );

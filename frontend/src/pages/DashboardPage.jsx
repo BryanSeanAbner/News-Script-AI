@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DashboardPage &mdash; Landing page utama
  * Menampilkan statistik naskah dan daftar artikel yang telah dipublish
  */
@@ -191,13 +191,14 @@ export default function DashboardPage() {
       <div className="dashboard-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Selamat datang di NewsScript AI &mdash; platform jurnalisme berbantuan AI</p>
+          <p className="page-subtitle">Selamat datang di NewsScript AI &mdash; Pembuatan Berita Berbantuan AI Berformula SEO Google 2026 (±400 Kata)</p>
         </div>
         <button
           className="btn btn-primary btn-lg"
           onClick={() => navigate('/new')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
         >
-          + Buat Naskah Baru
+          + Buat Berita 5W+1H (3 Slide)
         </button>
       </div>
 

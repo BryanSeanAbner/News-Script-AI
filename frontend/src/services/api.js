@@ -33,74 +33,9 @@ export const api = {
   healthCheck: () => request('/health'),
 
   // ══════════════════════════════════════════════════════════════════
-  // STEP 2: Fact Extraction (AI)
+  // Draft Generation (Google News 2026 SEO Formula)
   // ══════════════════════════════════════════════════════════════════
 
-  /**
-   * Extract facts dari artikel
-   * @param {string} articleText - Isi artikel lengkap
-   * @returns {Promise<{facts: Array, total_facts: number}>}
-   */
-  extractFacts: async (articleText) => {
-    const response = await request('/facts', {
-      method: 'POST',
-      body: JSON.stringify({ article_text: articleText }),
-    });
-    return response.data || response;
-  },
-
-  // ══════════════════════════════════════════════════════════════════
-  // STEP 3: Gap Analysis & Angle Mapping (AI)
-  // ══════════════════════════════════════════════════════════════════
-
-  /**
-   * Generate gap analysis dan angle mapping
-   * @param {string} articleText - Isi artikel
-   * @param {Array} facts - Fakta dari step 2
-   * @returns {Promise<{gaps: Array, angles: Array}>}
-   */
-  generateGapAnalysis: async (articleText, facts) => {
-    const response = await request('/gap-analysis', {
-      method: 'POST',
-      body: JSON.stringify({ article_text: articleText, facts }),
-    });
-    return response.data || response;
-  },
-
-  // ══════════════════════════════════════════════════════════════════
-  // STEP 4: Generate Title Recommendations (AI)
-  // ══════════════════════════════════════════════════════════════════
-
-  /**
-   * Generate title recommendations dari angle
-   * @param {string} angleTitle - Judul angle
-   * @param {string} angleHook - Hook angle
-   * @param {Array} facts - Fakta dari step 2
-   * @returns {Promise<{titles: Array}>}
-   */
-  generateTitles: async (angleTitle, angleHook, facts) => {
-    const response = await request('/titles', {
-      method: 'POST',
-      body: JSON.stringify({
-        angle_title: angleTitle,
-        angle_hook: angleHook,
-        facts,
-      }),
-    });
-    return response.data || response;
-  },
-
-  // ══════════════════════════════════════════════════════════════════
-  // STEP 5: Draft Generation (AI)
-  // ══════════════════════════════════════════════════════════════════
-
-  /**
-   * Generate draft artikel berlabel [FACT/CONTEXT/OPINI]
-   * @param {string} angleTitle - Judul angle yang dipilih
-   * @param {string} articleTitle - Judul artikel final
-   * @param {Array} facts - Fakta dari step 2
-   * @returns {Promise<{content: string, paragraphs: Array, word_count: number}>}
-   */
   generateDraft: async (angleTitle, articleTitle, facts) => {
     const response = await request('/draft', {
       method: 'POST',
@@ -114,23 +49,35 @@ export const api = {
   },
 
   // ══════════════════════════════════════════════════════════════════
-  // STEP 6: Grounding Check (AI)
+  // QUICK NEWS (3-Slide Interview to 5W+1H Google 2026 SEO News)
   // ══════════════════════════════════════════════════════════════════
 
   /**
-   * Verifikasi grounding score artikel vs fakta
-   * @param {string} draftContent - Isi draft artikel
-   * @param {Array} facts - Fakta dari step 2
-   * @returns {Promise<{grounding_score: number, total_claims: number, status: string}>}
+   * Analisis wawancara/kutipan narsum: ekstrak 5W+1H, judul SEO, quotes
    */
-  checkGrounding: async (draftContent, facts) => {
-    const response = await request('/grounding', {
+  analyzeInterview: async (payload) => {
+    const response = await request('/quick-news', {
       method: 'POST',
       body: JSON.stringify({
-        draft_content: draftContent,
-        facts,
+        action: 'analyze',
+        ...payload,
+      }),
+    });
+    return response.data || response;
+  },
+
+  /**
+   * Generate naskah berita 5W+1H berformula 350-500 kata Google 2026
+   */
+  generateQuickNews: async (payload) => {
+    const response = await request('/quick-news', {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'generate',
+        ...payload,
       }),
     });
     return response.data || response;
   },
 };
+

@@ -32,34 +32,6 @@ import {
   Trash2
 } from 'lucide-react';
 
-// Contoh data wawancara/kutipan narasumber untuk uji coba cepat
-const SAMPLE_INTERVIEWS = [
-  {
-    label: 'Kasus Pasutri Banyuwangi (Sesuai Rumus 2026)',
-    newsTitle: 'Pasutri Banyuwangi Ditangkap Terkait Penipuan Arisan Online Rp 1,2 Miliar',
-    topic: 'Kriminal',
-    text: `Kutipan wawancara Kasat Reskrim Polresta Banyuwangi, Kompol Agus Tri, S.H. di Mapolresta Banyuwangi, Rabu (9/9/2026):
-
-"Kami mengamankan sepasang suami istri berinisial MT (34) dan RN (31) di kediamannya di Rogojampi kemarin malam sekitar pukul 21.00 WIB. Mereka terbukti menjalankan sindikat penipuan arisan online fiktif yang merugikan 48 korban dengan total kerugian mencapai Rp 1,2 miliar. Modusnya mereka menjanjikan keuntungan 30 persen dalam dua pekan melalui grup WhatsApp 'Arisan Berkah Mandiri'.
-
-Saat penggerebekan, petugas menyita sejumlah barang bukti berupa 3 unit telepon genggam, 4 buku rekening bank BCA dan BRI, serta 1 unit mobil Honda HR-V warna putih yang diduga dibeli dari uang hasil penipuan tersebut. 
-
-Para tersangka kami jerat dengan Pasal 378 KUHP tentang Penipuan dan Pasal 372 KUHP tentang Penggelapan dengan ancaman pidana penjara maksimal 4 tahun. Kami masih menelusuri kemungkinan adanya aliran dana tindak pidana pencucian uang (TPPU) ke pihak lain."`
-  },
-  {
-    label: 'Penertiban Balap Liar Polda Metro',
-    newsTitle: 'Polda Metro Bubarkan Balap Liar Casablanca dan Amankan 19 Pemuda',
-    topic: 'Lalu Lintas',
-    text: `Pernyataan resmi Kabid Humas Polda Metro Jaya, Kombes Pol Ade Ary Syam Indradi di Polda Metro Jaya, Selasa (8/9/2026):
-
-"Tim Patroli Perintis Presisi Polda Metro Jaya membubarkan aksi balap liar di sepanjang Jalan Layang Non-Tol (JLNT) Casablanca pada dini hari tadi pukul 02.30 WIB. Sebanyak 19 pemuda bersama 14 unit sepeda motor tanpa kelengkapan surat dan berknalpot brong berhasil diamankan petugas di lokasi.
-
-Aksi balap liar ini sangat membahayakan keselamatan pengguna jalan lain serta meresahkan warga sekitar karena kebisingan knalpot di tengah malam. Hasil pemeriksaan awal juga menemukan indikasi taruhan uang tunai jutaan rupiah di antara para joki.
-
-Seluruh kendaraan yang disita akan ditahan minimal selama satu bulan penuh dan pemilik diwajibkan mengganti knalpot standar saat sidang tilang. Kami tidak akan mentolerir aksi ugal-ugalan di jalan raya ibu kota."`
-  }
-];
-
 // ── Helper: Serialize paragraphs ke clean Markdown string ─────────────────────
 function serializeParagraphsToMarkdown(paragraphs) {
   if (!paragraphs || paragraphs.length === 0) return '';
@@ -92,17 +64,17 @@ function parseMarkdownToParagraphs(markdownText, existingParagraphs = []) {
       currentHeading = block.replace(/^##\s+/, '').trim();
       continue;
     }
-    
+
     // Paragraf teks
     const prev = existingParagraphs[paraIdx] || {};
     let inferredType = prev.type || 'FACT';
-    
+
     // Deteksi cerdas label jika ada kata kunci editorial/opini
     const lower = block.toLowerCase();
-    if (lower.includes('redaksi menilai') || lower.includes('menurut redaksi') || 
-        lower.includes('catatan kritis') || lower.includes('analisis opini') ||
-        lower.includes('pengamat menilai') || lower.includes('evaluasi independen') ||
-        lower.includes('harapan ke depan') || lower.includes('pandangan redaksi')) {
+    if (lower.includes('redaksi menilai') || lower.includes('menurut redaksi') ||
+      lower.includes('catatan kritis') || lower.includes('analisis opini') ||
+      lower.includes('pengamat menilai') || lower.includes('evaluasi independen') ||
+      lower.includes('harapan ke depan') || lower.includes('pandangan redaksi')) {
       inferredType = 'OPINI';
     } else if (lower.includes('konteks') || lower.includes('regulasi') || lower.includes('sebelumnya') || lower.includes('latar belakang')) {
       inferredType = 'CONTEXT';
@@ -406,31 +378,6 @@ export default function QuickNewsPage() {
       {slide === 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {slide1Error && <Alert type="danger">{slide1Error}</Alert>}
-
-          {/* Quick Template Pills */}
-          <div style={{
-            backgroundColor: 'var(--color-canvas-subtle)',
-            border: '1px solid var(--color-border-muted)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-3)'
-          }}>
-            <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-fg-muted)', marginBottom: '8px' }}>
-              💡 Contoh Cepat Wawancara (Klik untuk langsung uji coba):
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {SAMPLE_INTERVIEWS.map((s, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => loadSample(s)}
-                  className="btn btn-secondary btn-sm"
-                  style={{ fontSize: '11px' }}
-                >
-                  <Sparkles size={12} style={{ color: 'var(--color-accent-fg)' }} /> {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="card" style={{ padding: 'var(--space-5)' }}>
             {/* Input Judul Berita & Kategori Konten */}
@@ -819,9 +766,8 @@ export default function QuickNewsPage() {
                           backgroundColor: 'var(--color-canvas-subtle)',
                           borderRadius: 'var(--radius-md)',
                           border: '1px solid var(--color-border-default)',
-                          borderLeft: `4px solid ${
-                            isFact ? 'var(--color-success-fg)' : isContext ? 'var(--color-accent-fg)' : 'var(--color-attention-fg)'
-                          }`,
+                          borderLeft: `4px solid ${isFact ? 'var(--color-success-fg)' : isContext ? 'var(--color-accent-fg)' : 'var(--color-attention-fg)'
+                            }`,
                           padding: 'var(--space-3)'
                         }}
                       >

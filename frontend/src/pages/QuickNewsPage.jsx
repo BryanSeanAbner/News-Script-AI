@@ -158,6 +158,7 @@ export default function QuickNewsPage() {
         quotes: analysisResult?.quotes || [],
         speaker_name: speakerName.trim(),
         speaker_title: speakerTitle.trim(),
+        topic: topic ? topic.trim() : '',
       });
 
       setDraftResult(res);

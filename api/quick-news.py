@@ -193,7 +193,8 @@ def generate_seo_news_draft(
     five_w_one_h: Dict = None,
     quotes: List[Dict] = None,
     speaker_name: str = "",
-    speaker_title: str = ""
+    speaker_title: str = "",
+    topic: str = ""
 ) -> Dict[str, Any]:
     """
     Slide 2 -> Slide 3:
@@ -643,6 +644,7 @@ class handler(BaseHTTPRequestHandler):
                 quotes = req.get('quotes', [])
                 speaker_name = req.get('speaker_name', '')
                 speaker_title = req.get('speaker_title', '')
+                topic = req.get('topic', '')
                 
                 result = generate_seo_news_draft(
                     raw_text=raw_text,
@@ -651,7 +653,8 @@ class handler(BaseHTTPRequestHandler):
                     five_w_one_h=five_w_one_h,
                     quotes=quotes,
                     speaker_name=speaker_name,
-                    speaker_title=speaker_title
+                    speaker_title=speaker_title,
+                    topic=topic
                 )
                 self.send_json_response(200, {"status": "ok", "data": result})
                 

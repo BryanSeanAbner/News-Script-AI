@@ -85,13 +85,185 @@ class AIProvider:
 
 
 def extract_json(text: str) -> str:
-    """Extract JSON dari response yang mungkin berisi markdown"""
+    """Extract JSON dari response yang mungkin berisi markdown (legacy alias)"""
+    return robust_json_loads(text) if False else _extract_json_raw(text)
+
+
+def _extract_json_raw(text: str) -> str:
+    """Raw extraction saja (untuk kompatibilitas generate_seo_news_draft)"""
     text = text.strip()
     if "```json" in text:
         text = text.split("```json")[1].split("```")[0]
     elif "```" in text:
         text = text.split("```")[1].split("```")[0]
+    # Strip trailing commas before } and ]
+    text = re.sub(r',\s*([\}\]])', r'\1', text)
+    text = re.sub(r',\s*([\}\]])', r'\1', text)  # 2nd pass for nested
     return text.strip()
+
+
+def robust_json_loads(text: str):
+    """
+    Parser JSON yang toleran terhadap output LLM yang tidak sempurna:
+    - Strips markdown fences (```json ... ```)
+    - Isolates outermost { ... } atau [ ... ]
+    - Strips JS/C++ comments
+    - Removes trailing commas before } and ] (multi-pass)
+    - Fixes unquoted property names: { key: "v" } -> { "key": "v" }
+    - Falls back to ast.literal_eval untuk single-quoted dicts
+    """
+    if not text or not isinstance(text, str):
+        raise ValueError("Empty or invalid text input")
+
+    cleaned = text.strip()
+
+    # 1. Strip markdown fences
+    match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', cleaned, re.IGNORECASE)
+    if match:
+        cleaned = match.group(1).strip()
+
+    # 2. Extract outermost JSON object or array
+    brace_start = cleaned.find('{')
+    bracket_start = cleaned.find('[')
+    start_idx = end_idx = -1
+
+    if brace_start != -1 and (bracket_start == -1 or brace_start < bracket_start):
+        start_idx = brace_start
+        end_idx = cleaned.rfind('}')
+    elif bracket_start != -1:
+        start_idx = bracket_start
+        end_idx = cleaned.rfind(']')
+
+    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+        cleaned = cleaned[start_idx:end_idx + 1]
+
+    # 3. Strip JS/C++ style comments
+    cleaned = re.sub(r'//[^\n\r]*', '', cleaned)
+    cleaned = re.sub(r'/\*[\s\S]*?\*/', '', cleaned)
+
+    # 4. Remove trailing commas before } or ] (multi-pass until stable)
+    prev = None
+    while prev != cleaned:
+        prev = cleaned
+        cleaned = re.sub(r',\s*([\}\]])', r'\1', cleaned)
+
+    # Attempt 1: Direct json.loads
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # Attempt 2: Fix unquoted property names {key: "v"} -> {"key": "v"}
+    try:
+        fixed = re.sub(r'([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned)
+        prev = None
+        while prev != fixed:
+            prev = fixed
+            fixed = re.sub(r',\s*([\}\]])', r'\1', fixed)
+        return json.loads(fixed)
+    except Exception:
+        pass
+
+    # Attempt 3: ast.literal_eval for Python dict / single-quoted
+    try:
+        import ast
+        val = ast.literal_eval(cleaned)
+        if isinstance(val, (dict, list)):
+            return val
+    except Exception:
+        pass
+
+    # Attempt 4: Clean stray control characters
+    try:
+        ctrl_cleaned = re.sub(
+            r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', ' ', cleaned
+        )
+        return json.loads(ctrl_cleaned)
+    except Exception:
+        pass
+
+    raise json.JSONDecodeError("robust_json_loads: unable to repair JSON", cleaned, 0)
+
+
+def fallback_extract_analysis(
+    text: str,
+    default_title: str = "",
+    default_topic: str = "",
+    raw_text: str = ""
+) -> Dict[str, Any]:
+    """
+    Ekstraksi 5W+1H, quotes, titles, angles dari teks raw LLM via regex.
+    Dipakai sebagai last-resort ketika robust_json_loads gagal total.
+    Menjamin endpoint TIDAK pernah mengembalikan HTTP 500 karena JSON rusak.
+    """
+    data: Dict[str, Any] = {
+        "five_w_one_h": {"what": "", "who": "", "where": "", "when": "", "why": "", "how": ""},
+        "quotes": [],
+        "titles": [],
+        "angles": []
+    }
+
+    # Ekstraksi 5W+1H
+    for field in ["what", "who", "where", "when", "why", "how"]:
+        m = re.search(rf'"{field}"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', text, re.IGNORECASE)
+        if not m:
+            m = re.search(rf'"{field}"\s*:\s*[\'"](.*?)[\'"\s]\s*[,}}]', text, re.IGNORECASE)
+        if m:
+            data["five_w_one_h"][field] = m.group(1).strip()
+
+    # Ekstraksi quotes
+    pairs = re.findall(
+        r'"speaker"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"\'\s*,\s*"quote"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"',
+        text
+    )
+    if not pairs:
+        pairs = re.findall(
+            r'"speaker"\s*:\s*"([^"]+)"[\s\S]*?"quote"\s*:\s*"([^"]+)"',
+            text
+        )
+    for sp, q in pairs:
+        data["quotes"].append({"speaker": sp.strip(), "quote": q.strip()})
+
+    # Ekstraksi titles (field "text" di dalam titles array)
+    title_texts = re.findall(r'"text"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', text)
+    for i, t in enumerate(title_texts[:3], 1):
+        data["titles"].append({
+            "id": i, "text": t.strip(),
+            "keyword": default_topic or "Berita Terkini",
+            "style": "SEO Recommended"
+        })
+
+    # Ekstraksi angles
+    ang = re.findall(
+        r'"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"+[\s\S]*?"hook"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"',
+        text
+    )
+    for i, (at, ah) in enumerate(ang[:3], 1):
+        data["angles"].append({"id": i, "title": at.strip(), "hook": ah.strip()})
+
+    # Default fallback values jika masih kosong
+    w = data["five_w_one_h"]
+    if not w["what"]:  w["what"] = default_title or "Peristiwa penting terkini yang dibahas narasumber."
+    if not w["who"]:   w["who"] = "Pihak terkait dan narasumber dalam keterangan resmi"
+    if not w["where"]: w["where"] = "Jakarta / Lokasi keterangan resmi"
+    if not w["when"]:  w["when"] = "Terkini"
+    if not w["why"]:   w["why"] = "Menindaklanjuti laporan dan perkembangan situasi terkini."
+    if not w["how"]:   w["how"] = "Melalui klarifikasi dan koordinasi resmi bersama otoritas terkait."
+
+    base_t = default_title if default_title else "Klarifikasi Fakta Terkini"
+    if not data["titles"]:
+        data["titles"] = [
+            {"id": 1, "text": f"{base_t}: Penjelasan Lengkap dan Fakta di Lapangan", "keyword": default_topic or "Klarifikasi", "style": "Breaking News"},
+            {"id": 2, "text": f"Duduk Perkara {base_t}: Kronologi dan Tanggapan Resmi", "keyword": default_topic or "Kronologi", "style": "Kronologi & Dampak"},
+            {"id": 3, "text": f"Sikap Tegas Terkait {base_t}: Evaluasi dan Tindak Lanjut", "keyword": default_topic or "Tindak Lanjut", "style": "Pernyataan Pejabat"}
+        ]
+    if not data["angles"]:
+        data["angles"] = [
+            {"id": 1, "title": "Fokus Kronologi & Peristiwa", "hook": "Menyoroti detik-detik peristiwa dan fakta di lapangan"},
+            {"id": 2, "title": "Fokus Tanggapan Resmi & Evaluasi", "hook": "Menyoroti pernyataan pihak terkait dan evaluasi aturan"}
+        ]
+
+    return data
 
 
 def analyze_interview_narsum(raw_text: str, speaker_name: str = "", speaker_title: str = "", topic: str = "", title: str = "") -> Dict[str, Any]:
@@ -133,7 +305,16 @@ TUGAS KAMU:
    {f"- Pertimbangkan ide judul awal dari pengguna: '{title}' dan kembangkan menjadi versi judul SEO ber-CTR tinggi" if title else ""}
 4. Buat 2-3 Angle / Sudut Pandang berita yang bisa dipilih editor.
 
-PENTING: Berikan output HANYA format JSON valid tanpa markdown codeblock:
+ATURAN JSON WAJIB:
+- Output HANYA format JSON valid, tanpa markdown codeblock, tanpa komentar.
+- DILARANG KERAS menggunakan tanda petik ganda (") di dalam nilai string.
+  Gunakan tanda petik tunggal (') untuk kutipan langsung di dalam teks.
+  Contoh BENAR: "quote": "Stephanie mengatakan 'Penjual adalah mitra kami.'"
+  Contoh SALAH:  "quote": "Stephanie mengatakan \"Penjual adalah mitra kami.\""
+- DILARANG trailing comma setelah item terakhir di dalam array atau object.
+- WAJIB menggunakan double-quote (") untuk semua nama properti JSON.
+
+FORMAT OUTPUT:
 {{
   "five_w_one_h": {{
     "what": "...",
@@ -146,7 +327,7 @@ PENTING: Berikan output HANYA format JSON valid tanpa markdown codeblock:
   "quotes": [
     {{
       "speaker": "...",
-      "quote": "Kutipan langsung verbatim..."
+      "quote": "Kutipan langsung verbatim menggunakan tanda petik tunggal untuk kutipan di dalam teks..."
     }}
   ],
   "titles": [
@@ -184,8 +365,56 @@ PENTING: Berikan output HANYA format JSON valid tanpa markdown codeblock:
 }}"""
 
     result_text = provider.generate(prompt, max_tokens=3000)
-    data = json.loads(extract_json(result_text))
-    return data
+
+    # Attempt 1: robust parse
+    try:
+        data = robust_json_loads(result_text)
+        return data
+    except Exception as e:
+        print(f"[analyze_interview_narsum] Attempt 1 JSON parse failed: {e}")
+
+    # Attempt 2: Retry dengan prompt yang lebih strict
+    try:
+        retry_prompt = f"""Kamu adalah parser JSON. Output HANYA objek JSON valid, tanpa penjelasan, tanpa markdown.
+Gunakan tanda petik tunggal (') untuk kutipan di dalam nilai string agar tidak merusak JSON.
+JANGAN trailing comma. WAJIB double-quote untuk semua key.
+
+TEKS SUMBER:
+\"\"\"
+{raw_text[:2000]}
+\"\"\"
+
+TOPIK: {topic or 'Umum'}
+
+OUTPUT JSON:
+{{
+  "five_w_one_h": {{"what": "...", "who": "...", "where": "...", "when": "...", "why": "...", "how": "..."}},
+  "quotes": [{{"speaker": "Nama", "quote": "Kutipan dengan petik tunggal jika perlu"}}],
+  "titles": [
+    {{"id": 1, "text": "Judul SEO 1", "keyword": "keyword", "style": "Breaking News"}},
+    {{"id": 2, "text": "Judul SEO 2", "keyword": "keyword", "style": "Kronologi"}},
+    {{"id": 3, "text": "Judul SEO 3", "keyword": "keyword", "style": "Pernyataan Pejabat"}}
+  ],
+  "angles": [
+    {{"id": 1, "title": "Sudut Pandang 1", "hook": "Hook 1"}},
+    {{"id": 2, "title": "Sudut Pandang 2", "hook": "Hook 2"}}
+  ]
+}}"""
+        retry_text = provider.generate(retry_prompt, max_tokens=2000)
+        data = robust_json_loads(retry_text)
+        print("[analyze_interview_narsum] Attempt 2 (retry) succeeded.")
+        return data
+    except Exception as e2:
+        print(f"[analyze_interview_narsum] Attempt 2 retry also failed: {e2}")
+
+    # Attempt 3: Regex fallback - NEVER returns HTTP 500
+    print("[analyze_interview_narsum] Falling back to regex extraction.")
+    return fallback_extract_analysis(
+        result_text,
+        default_title=title,
+        default_topic=topic,
+        raw_text=raw_text
+    )
 
 
 def generate_seo_news_draft(
@@ -405,7 +634,7 @@ Keluarkan HANYA JSON valid tanpa markdown code block, tanpa komentar apapun di l
     result_text = provider.generate(prompt, max_tokens=6000)
     
     try:
-        data = json.loads(extract_json(result_text))
+        data = robust_json_loads(result_text)
         
         # Flatten paragraphs
         flat_paragraphs = []
@@ -509,7 +738,7 @@ KEMBALIKAN JSON LENGKAP (struktur sections sama persis)."""
 
             try:
                 expanded_result = provider.generate(expand_prompt, max_tokens=6000)
-                expanded_data = json.loads(extract_json(expanded_result))
+                expanded_data = robust_json_loads(expanded_result)
                 flat_exp = _flatten_and_clean(expanded_data)
                 exp_wc = _word_count(flat_exp)
 
@@ -601,7 +830,7 @@ Output JSON:
 }}"""
         try:
             retry_text = provider.generate(retry_prompt, max_tokens=6000)
-            retry_data = json.loads(extract_json(retry_text))
+            retry_data = robust_json_loads(retry_text)
             flat_retry = []
             for sec in retry_data.get("sections", []):
                 sec_heading = sec.get("heading")

@@ -251,14 +251,14 @@ export default function QuickNewsPage() {
             Mode Cepat Google 2026
           </Badge>
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)' }}>
-            Rumus SEO Berita Harian 350–500 Kata (Target ±400 Kata)
+            Rumus SEO 350–500 Kata (Target ±400 Kata) — Berita, Artikel, Laporan, Opini
           </span>
         </div>
         <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--color-fg-default)' }}>
-          Generator Berita 5W+1H (3 Slide)
+          Generator Naskah 5W+1H (3 Slide)
         </h1>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-fg-muted)' }}>
-          Ubah rekaman wawancara atau kutipan narasumber langsung menjadi naskah berita 5W+1H ber-H2 siap tayang di Google News.
+          Ubah kutipan narasumber, siaran pers, data wawancara, atau bahan teks apapun menjadi naskah terstruktur 5W+1H ber-H2 standar Google 2026.
         </p>
       </div>
 
@@ -375,47 +375,46 @@ export default function QuickNewsPage() {
             {/* Input Identitas Narsum Ringan */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
               <div className="form-group">
-                <label className="form-label" htmlFor="speaker-name">Nama Narasumber</label>
+                <label className="form-label" htmlFor="speaker-name">Nama Narasumber / Penulis</label>
                 <input
                   id="speaker-name"
                   type="text"
                   className="form-input"
-                  placeholder="cth: Kompol Agus Tri, S.H."
+                  placeholder="cth: Kompol Agus Tri, Direktur PT X"
                   value={speakerName}
                   onChange={e => setSpeakerName(e.target.value)}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="speaker-title">Jabatan / Instansi</label>
+                <label className="form-label" htmlFor="speaker-title">Jabatan / Institusi</label>
                 <input
                   id="speaker-title"
                   type="text"
                   className="form-input"
-                  placeholder="cth: Kasat Reskrim Polresta Banyuwangi"
+                  placeholder="cth: Kasat Reskrim, CEO, Peneliti UI"
                   value={speakerTitle}
                   onChange={e => setSpeakerTitle(e.target.value)}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="topic-select">Topik Berita</label>
+                <label className="form-label" htmlFor="topic-select">Topik / Kategori Konten</label>
                 <input
                   id="topic-select"
                   type="text"
                   className="form-input"
-                  placeholder="Kriminal, Hukum, Lalin, dll."
+                  placeholder="Kriminal, Kebijakan, Bisnis, Opini, dll."
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
                 />
               </div>
             </div>
 
-            {/* Input Utama: Teks Wawancara / Rekaman Kutipan */}
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
                 <label className="form-label form-label-required" htmlFor="raw-interview" style={{ marginBottom: 0 }}>
-                  Kutipan / Transkrip Wawancara / Siaran Pers Narasumber
+                  Bahan Teks: Kutipan / Transkrip / Siaran Pers / Data Apapun
                 </label>
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-fg-muted)' }}>
                   {rawText.trim().split(/\s+/).filter(Boolean).length} kata | {rawText.length} karakter
@@ -426,7 +425,7 @@ export default function QuickNewsPage() {
                 id="raw-interview"
                 className="form-input form-textarea"
                 rows={10}
-                placeholder="Paste transkrip wawancara langsung, kutipan narasumber, kronologi kejadian dari kepolisian/pejabat, atau siaran pers di sini..."
+                placeholder={`Paste bahan teks di sini — bisa berupa:\n• Transkrip wawancara narasumber\n• Kutipan langsung pejabat/tokoh\n• Siaran pers / rilis resmi\n• Data lapangan / kronologi kejadian\n• Laporan keuangan / hasil riset\n• Pidato / pernyataan resmi\n• Catatan rapat / notulensi\nAI akan otomatis membedah 5W+1H, mengekstrak kutipan kunci, dan merancang judul serta angle terbaik.`}
                 value={rawText}
                 onChange={e => setRawText(e.target.value)}
                 style={{ fontSize: 'var(--text-base)', lineHeight: '1.6' }}
@@ -870,10 +869,19 @@ export default function QuickNewsPage() {
             {/* Kolom Kanan: Kalkulator Kata & Skor SEO Google 2026 */}
             <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               <WordCalculatorSEO
-                text={fullTextMode ? fullTextContent : editableParagraphs.map(p => {
-                  const h = p.section_heading ? `\n## ${p.section_heading}\n` : '';
-                  return `${h}${p.text}`;
-                }).join('\n\n')}
+                text={fullTextMode ? fullTextContent : (() => {
+                  // Deduplicate headings — setiap heading hanya ditulis SEKALI
+                  let lastHeading = null;
+                  const lines = [];
+                  editableParagraphs.forEach(p => {
+                    if (p.section_heading && p.section_heading !== lastHeading) {
+                      lastHeading = p.section_heading;
+                      lines.push(`## ${p.section_heading}`);
+                    }
+                    if (p.text && p.text.trim()) lines.push(p.text.trim());
+                  });
+                  return lines.join('\n\n');
+                })()}
                 paragraphs={editableParagraphs}
                 title={useCustomTitle ? customTitle : selectedTitle}
               />

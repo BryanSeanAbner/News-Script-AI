@@ -31,57 +31,116 @@ except ImportError:
 
 
 class AIProvider:
-    """Multi-provider AI adapter untuk Groq → Gemini → OpenRouter fallback (TETAP DIPERTAHANKAN)"""
+    """
+    Multi-provider AI adapter dengan fallback urutan:
+    1. OpenRouter AI (Free Models: Llama 3.3 70B Free, DeepSeek Chat Free)
+    2. Google Gemini AI (Free Tier: Gemini 2.0 Flash, Gemini 1.5 Flash)
+    3. Groq AI (Free Tier: Llama 3.3 70B Versatile, Llama 3.1 8B Instant)
+    
+    Setiap provider mencoba Model 1 terlebih dahulu, jika gagal/rate limit beralih ke Model 2,
+    sebelum melanjutkan ke provider berikutnya.
+    """
     
     def __init__(self):
-        self.groq_key = os.getenv('GROK_API_KEY', '')
-        self.gemini_key = os.getenv('GEMINI_API_KEY', '')
         self.openrouter_key = os.getenv('OPENROUTER_API_KEY', '')
+        self.gemini_key = os.getenv('GEMINI_API_KEY', '')
+        self.groq_key = os.getenv('GROQ_API_KEY') or os.getenv('GROK_API_KEY', '')
+
+        # Model Gratis (100% Free / Free-tier)
+        self.openrouter_models = [
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "deepseek/deepseek-chat:free",
+            "qwen/qwen-2.5-72b-instruct:free"
+        ]
+        self.gemini_models = [
+            "gemini-2.0-flash",
+            "gemini-1.5-flash"
+        ]
+        self.groq_models = [
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant"
+        ]
     
     def generate(self, prompt: str, max_tokens: int = 4096) -> str:
-        """Generate text menggunakan multi-provider fallback"""
+        """Generate text menggunakan fallback OpenRouter -> Gemini -> Groq dengan 2 model gratis per provider"""
+        errors = []
         
-        # Try Groq first
-        if self.groq_key and Groq:
-            try:
-                client = Groq(api_key=self.groq_key)
-                response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=min(max_tokens, 8000),
-                    temperature=0.3
-                )
-                return response.choices[0].message.content
-            except Exception as e:
-                print(f"Groq failed: {e}")
-        
-        # Fallback ke Gemini
-        if self.gemini_key and genai:
-            try:
-                genai.configure(api_key=self.gemini_key)
-                model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                response = model.generate_content(prompt)
-                return response.text
-            except Exception as e:
-                print(f"Gemini failed: {e}")
-        
-        # Fallback ke OpenRouter
+        # ── 1. Priority 1: OpenRouter AI ─────────────────────────────────────
         if self.openrouter_key and OpenAI:
             try:
                 client = OpenAI(
                     api_key=self.openrouter_key,
                     base_url="https://openrouter.ai/api/v1",
+                    default_headers={
+                        "HTTP-Referer": "https://newsscript.ai",
+                        "X-Title": "NewsScript AI",
+                    }
                 )
-                response = client.chat.completions.create(
-                    model="meta-llama/llama-3.3-70b-instruct",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=min(max_tokens, 4096),
-                )
-                return response.choices[0].message.content
-            except Exception as e:
-                print(f"OpenRouter failed: {e}")
+                for model_name in self.openrouter_models:
+                    try:
+                        print(f"[AIProvider] Mencoba OpenRouter model: {model_name}...")
+                        response = client.chat.completions.create(
+                            model=model_name,
+                            messages=[{"role": "user", "content": prompt}],
+                            max_tokens=min(max_tokens, 4096),
+                            temperature=0.3
+                        )
+                        content = response.choices[0].message.content
+                        if content and len(content.strip()) > 0:
+                            print(f"[AIProvider] Berhasil dengan OpenRouter ({model_name})")
+                            return content
+                    except Exception as model_err:
+                        print(f"[AIProvider] OpenRouter ({model_name}) gagal: {model_err}")
+                        errors.append(f"OpenRouter ({model_name}): {model_err}")
+            except Exception as client_err:
+                print(f"[AIProvider] OpenRouter client error: {client_err}")
+                errors.append(f"OpenRouter client: {client_err}")
         
-        raise Exception("Semua AI providers gagal. Pastikan setidaknya satu API key tersedia.")
+        # ── 2. Priority 2: Google Gemini AI ──────────────────────────────────
+        if self.gemini_key and genai:
+            try:
+                genai.configure(api_key=self.gemini_key)
+                for model_name in self.gemini_models:
+                    try:
+                        print(f"[AIProvider] Mencoba Gemini model: {model_name}...")
+                        model = genai.GenerativeModel(model_name)
+                        response = model.generate_content(prompt)
+                        if response and response.text and len(response.text.strip()) > 0:
+                            print(f"[AIProvider] Berhasil dengan Gemini ({model_name})")
+                            return response.text
+                    except Exception as model_err:
+                        print(f"[AIProvider] Gemini ({model_name}) gagal: {model_err}")
+                        errors.append(f"Gemini ({model_name}): {model_err}")
+            except Exception as client_err:
+                print(f"[AIProvider] Gemini client error: {client_err}")
+                errors.append(f"Gemini client: {client_err}")
+        
+        # ── 3. Priority 3: Groq AI ───────────────────────────────────────────
+        if self.groq_key and Groq:
+            try:
+                client = Groq(api_key=self.groq_key)
+                for model_name in self.groq_models:
+                    try:
+                        print(f"[AIProvider] Mencoba Groq model: {model_name}...")
+                        response = client.chat.completions.create(
+                            model=model_name,
+                            messages=[{"role": "user", "content": prompt}],
+                            max_tokens=min(max_tokens, 8000),
+                            temperature=0.3
+                        )
+                        content = response.choices[0].message.content
+                        if content and len(content.strip()) > 0:
+                            print(f"[AIProvider] Berhasil dengan Groq ({model_name})")
+                            return content
+                    except Exception as model_err:
+                        print(f"[AIProvider] Groq ({model_name}) gagal: {model_err}")
+                        errors.append(f"Groq ({model_name}): {model_err}")
+            except Exception as client_err:
+                print(f"[AIProvider] Groq client error: {client_err}")
+                errors.append(f"Groq client: {client_err}")
+        
+        err_detail = " | ".join(errors) if errors else "Tidak ada API key yang valid."
+        raise Exception(f"Semua AI providers (OpenRouter -> Gemini -> Groq) gagal. Detail: {err_detail}")
 
 
 def extract_json(text: str) -> str:
@@ -533,15 +592,18 @@ KEMBALIKAN JSON LENGKAP (struktur sections sama persis)."""
                 break
 
         # Bangun full content markdown
-        content_lines = []
+        # Bangun full content markdown yang bersih dan konsisten
+        content_blocks = []
         last_heading = None
         for p in data.get("paragraphs", []):
-            h = p.get("section_heading")
+            h = (p.get("section_heading") or "").strip()
             if h and h != last_heading:
                 last_heading = h
-                content_lines.append(f"\n## {h}\n")
-            content_lines.append(p.get("text", ""))
-        data["content"] = "\n\n".join(content_lines).strip()
+                content_blocks.append(f"## {h}")
+            txt = (p.get("text") or "").strip()
+            if txt:
+                content_blocks.append(txt)
+        data["content"] = "\n\n".join(content_blocks).strip()
         
         return data
     except Exception as e:
@@ -593,16 +655,18 @@ Output JSON:
             retry_text_all = " ".join([p.get("text", "") for p in flat_retry])
             retry_data["word_count"] = len(retry_text_all.split())
             
-            # Build content
-            content_lines = []
+            # Build clean content
+            content_blocks = []
             last_h = None
             for p in flat_retry:
-                h = p.get("section_heading")
+                h = (p.get("section_heading") or "").strip()
                 if h and h != last_h:
                     last_h = h
-                    content_lines.append(f"\n## {h}\n")
-                content_lines.append(p.get("text", ""))
-            retry_data["content"] = "\n\n".join(content_lines).strip()
+                    content_blocks.append(f"## {h}")
+                txt = (p.get("text") or "").strip()
+                if txt:
+                    content_blocks.append(txt)
+            retry_data["content"] = "\n\n".join(content_blocks).strip()
             return retry_data
         except Exception as retry_err:
             print(f"Retry also failed: {retry_err}")

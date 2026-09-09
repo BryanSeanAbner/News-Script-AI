@@ -50,17 +50,17 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
     // Hitung H2 (cek markdown ## atau baris subjudul)
     const h2Matches = trimmed.match(/^##\s+.+$/gm) || [];
     let h2Count = h2Matches.length;
-    // Jika tidak pakai markdown ##, cek dari paragraphs metadata jika ada
-    if (h2Count === 0 && paragraphs && paragraphs.length > 0) {
+    if (paragraphs && paragraphs.length > 0) {
       const headingSet = new Set(paragraphs.map(p => p.section_heading).filter(Boolean));
-      h2Count = headingSet.size;
+      h2Count = Math.max(h2Count, headingSet.size);
     }
 
-    // Hitung kutipan narasumber (petik ganda)
-    const quoteMatches = trimmed.match(/"([^"]{5,300})"/g) || [];
+    // Hitung kutipan narasumber (petik ganda biasa atau kutipan tipografis bahasa Indonesia “...”)
+    const quoteMatches = trimmed.match(/["“]([^"”]{5,300})["”]/g) || [];
     let quotesCount = quoteMatches.length;
-    if (quotesCount === 0 && paragraphs && paragraphs.length > 0) {
-      quotesCount = paragraphs.filter(p => p.quote && p.quote.trim().length > 0).length;
+    if (paragraphs && paragraphs.length > 0) {
+      const paraQuotes = paragraphs.filter(p => p.quote && p.quote.trim().length > 0).length;
+      quotesCount = Math.max(quotesCount, paraQuotes);
     }
 
     // Lead (paragraf pertama): hitung kata
@@ -93,10 +93,19 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
         else if (t === 'OPINI') opiniCount++;
         else contextCount++;
       });
-    } else {
-      factCount = (trimmed.match(/\[FACT\]/gi) || []).length;
-      contextCount = (trimmed.match(/\[CONTEXT\]/gi) || []).length;
-      opiniCount = (trimmed.match(/\[OPINI\]/gi) || []).length;
+    }
+    // Fallback deteksi jika di mode fulltext murni
+    if (opiniCount === 0) {
+      const opiniMatches = trimmed.match(/\[OPINI\]|redaksi menilai|catatan kritis|analisis opini|menurut redaksi|pandangan redaksi/gi) || [];
+      opiniCount = opiniMatches.length;
+    }
+    if (factCount === 0) {
+      const fMatches = trimmed.match(/\[FACT\]/gi) || [];
+      factCount = fMatches.length;
+    }
+    if (contextCount === 0) {
+      const cMatches = trimmed.match(/\[CONTEXT\]/gi) || [];
+      contextCount = cMatches.length;
     }
     const hasFullComposition = factCount > 0 && contextCount > 0 && opiniCount > 0;
 

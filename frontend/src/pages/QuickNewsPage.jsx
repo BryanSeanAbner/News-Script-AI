@@ -60,6 +60,68 @@ Seluruh kendaraan yang disita akan ditahan minimal selama satu bulan penuh dan p
   }
 ];
 
+// ── Helper: Serialize paragraphs ke clean Markdown string ─────────────────────
+function serializeParagraphsToMarkdown(paragraphs) {
+  if (!paragraphs || paragraphs.length === 0) return '';
+  let lastHeading = null;
+  const blocks = [];
+  paragraphs.forEach(p => {
+    const heading = (p.section_heading || '').trim();
+    if (heading && heading !== lastHeading) {
+      lastHeading = heading;
+      blocks.push(`## ${heading}`);
+    }
+    const text = (p.text || '').trim();
+    if (text) {
+      blocks.push(text);
+    }
+  });
+  return blocks.join('\n\n');
+}
+
+// ── Helper: Parse markdown string kembali ke struktur array paragraphs ────────
+function parseMarkdownToParagraphs(markdownText, existingParagraphs = []) {
+  if (!markdownText || !markdownText.trim()) return [];
+  const blocks = markdownText.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  const newParas = [];
+  let currentHeading = null;
+  let paraIdx = 0;
+
+  for (const block of blocks) {
+    if (block.startsWith('## ')) {
+      currentHeading = block.replace(/^##\s+/, '').trim();
+      continue;
+    }
+    
+    // Paragraf teks
+    const prev = existingParagraphs[paraIdx] || {};
+    let inferredType = prev.type || 'FACT';
+    
+    // Deteksi cerdas label jika ada kata kunci editorial/opini
+    const lower = block.toLowerCase();
+    if (lower.includes('redaksi menilai') || lower.includes('menurut redaksi') || 
+        lower.includes('catatan kritis') || lower.includes('analisis opini') ||
+        lower.includes('pengamat menilai') || lower.includes('evaluasi independen') ||
+        lower.includes('harapan ke depan') || lower.includes('pandangan redaksi')) {
+      inferredType = 'OPINI';
+    } else if (lower.includes('konteks') || lower.includes('regulasi') || lower.includes('sebelumnya') || lower.includes('latar belakang')) {
+      inferredType = 'CONTEXT';
+    }
+
+    newParas.push({
+      ...prev,
+      order: paraIdx + 1,
+      type: inferredType,
+      text: block,
+      section_heading: currentHeading,
+      quote: prev.quote || null
+    });
+    paraIdx++;
+  }
+
+  return newParas;
+}
+
 export default function QuickNewsPage() {
   const navigate = useNavigate();
   const { saveQuickNewsSession } = useSessionStore();
@@ -166,13 +228,11 @@ export default function QuickNewsPage() {
 
       // Inisialisasi paragraf untuk inline editorial review
       const paras = res.paragraphs || [];
-      setEditableParagraphs(paras.map(p => ({ ...p })));
+      const clonedParas = paras.map(p => ({ ...p }));
+      setEditableParagraphs(clonedParas);
 
-      // Inisialisasi full text
-      const initialText = res.content || paras.map(p => {
-        const heading = p.section_heading ? `\n## ${p.section_heading}\n` : '';
-        return `${heading}${p.text}`;
-      }).join('\n\n');
+      // Inisialisasi full text dengan serializer yang sama persis
+      const initialText = serializeParagraphsToMarkdown(clonedParas) || res.content || '';
       setFullTextContent(initialText);
 
       setSlide(3);
@@ -189,31 +249,31 @@ export default function QuickNewsPage() {
     updated[idx][field] = val;
     setEditableParagraphs(updated);
 
-    // Sync to full text content
-    const newFullText = updated.map(p => {
-      const heading = p.section_heading ? `\n## ${p.section_heading}\n` : '';
-      return `${heading}${p.text}`;
-    }).join('\n\n');
+    // Sync to full text content secara konsisten
+    const newFullText = serializeParagraphsToMarkdown(updated);
     setFullTextContent(newFullText);
+  }
+
+  // ── Toggle Mode Antara Paragraf & Editor Teks Lengkap ─────────────────────
+  function handleToggleMode() {
+    if (!fullTextMode) {
+      // Masuk ke Full Text Mode: serialize dari editableParagraphs
+      const markdown = serializeParagraphsToMarkdown(editableParagraphs);
+      setFullTextContent(markdown);
+      setFullTextMode(true);
+    } else {
+      // Kembali ke Mode Paragraf: parse dari fullTextContent
+      const parsed = parseMarkdownToParagraphs(fullTextContent, editableParagraphs);
+      setEditableParagraphs(parsed);
+      setFullTextMode(false);
+    }
   }
 
   // ── Copy Clean Text to Clipboard ──────────────────────────────────────────
   function handleCopy() {
     const titleToCopy = useCustomTitle ? customTitle : selectedTitle;
-    let textToCopy = `# ${titleToCopy}\n\n`;
-
-    if (fullTextMode) {
-      textToCopy += fullTextContent;
-    } else {
-      let currentHeading = null;
-      editableParagraphs.forEach(p => {
-        if (p.section_heading && p.section_heading !== currentHeading) {
-          currentHeading = p.section_heading;
-          textToCopy += `## ${p.section_heading}\n\n`;
-        }
-        textToCopy += `${p.text}\n\n`;
-      });
-    }
+    const bodyToCopy = fullTextMode ? fullTextContent : serializeParagraphsToMarkdown(editableParagraphs);
+    const textToCopy = `# ${titleToCopy}\n\n${bodyToCopy}`;
 
     navigator.clipboard.writeText(textToCopy.trim());
     setCopied(true);
@@ -223,9 +283,7 @@ export default function QuickNewsPage() {
   // ── Simpan / Publish Session ──────────────────────────────────────────────
   function handleSaveAndPublish() {
     const finalTitle = useCustomTitle ? customTitle : selectedTitle;
-    const finalContent = fullTextMode
-      ? fullTextContent
-      : editableParagraphs.map(p => p.text).join('\n\n');
+    const finalContent = fullTextMode ? fullTextContent : serializeParagraphsToMarkdown(editableParagraphs);
 
     const extractedSpeaker = analysisResult?.quotes?.[0]?.speaker || analysisResult?.five_w_one_h?.who || '';
     const savedSession = saveQuickNewsSession({
@@ -710,7 +768,7 @@ export default function QuickNewsPage() {
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
-                onClick={() => setFullTextMode(!fullTextMode)}
+                onClick={handleToggleMode}
               >
                 <Edit3 size={14} /> {fullTextMode ? 'Mode Paragraf & Label' : 'Mode Editor Teks Lengkap'}
               </button>
@@ -851,7 +909,13 @@ export default function QuickNewsPage() {
                     className="form-input form-textarea"
                     rows={18}
                     value={fullTextContent}
-                    onChange={e => setFullTextContent(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setFullTextContent(val);
+                      // Real-time sync ke struktur paragraf agar skor & word count selalu identik
+                      const parsed = parseMarkdownToParagraphs(val, editableParagraphs);
+                      setEditableParagraphs(parsed);
+                    }}
                     style={{ fontSize: 'var(--text-base)', lineHeight: '1.7' }}
                   />
                   <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
@@ -864,19 +928,7 @@ export default function QuickNewsPage() {
             {/* Kolom Kanan: Kalkulator Kata & Skor SEO Google 2026 */}
             <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               <WordCalculatorSEO
-                text={fullTextMode ? fullTextContent : (() => {
-                  // Deduplicate headings — setiap heading hanya ditulis SEKALI
-                  let lastHeading = null;
-                  const lines = [];
-                  editableParagraphs.forEach(p => {
-                    if (p.section_heading && p.section_heading !== lastHeading) {
-                      lastHeading = p.section_heading;
-                      lines.push(`## ${p.section_heading}`);
-                    }
-                    if (p.text && p.text.trim()) lines.push(p.text.trim());
-                  });
-                  return lines.join('\n\n');
-                })()}
+                text={fullTextMode ? fullTextContent : serializeParagraphsToMarkdown(editableParagraphs)}
                 paragraphs={editableParagraphs}
                 title={useCustomTitle ? customTitle : selectedTitle}
               />

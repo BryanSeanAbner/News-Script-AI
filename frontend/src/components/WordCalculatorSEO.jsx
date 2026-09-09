@@ -82,6 +82,24 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
     });
     const mobileFriendly = violatingParas.length === 0;
 
+    // Hitung Komposisi Jurnalistik [FACT], [CONTEXT], [OPINI]
+    let factCount = 0;
+    let contextCount = 0;
+    let opiniCount = 0;
+    if (paragraphs && paragraphs.length > 0) {
+      paragraphs.forEach(p => {
+        const t = (p.type || '').toUpperCase();
+        if (t === 'FACT') factCount++;
+        else if (t === 'OPINI') opiniCount++;
+        else contextCount++;
+      });
+    } else {
+      factCount = (trimmed.match(/\[FACT\]/gi) || []).length;
+      contextCount = (trimmed.match(/\[CONTEXT\]/gi) || []).length;
+      opiniCount = (trimmed.match(/\[OPINI\]/gi) || []).length;
+    }
+    const hasFullComposition = factCount > 0 && contextCount > 0 && opiniCount > 0;
+
     // Tentukan Zona SEO Jumlah Kata
     let zone = 'safe';
     let zoneLabel = 'ZONA AMAN PALING SEO (Google News 2026)';
@@ -127,9 +145,9 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
     if (leadWords >= 35 && leadWords <= 55) {
       score += 20; // Pas 40-50 kata
     } else if (leadWords >= 25 && leadWords <= 70) {
-      score += 12;
+      score += 15;
     } else if (leadWords > 0) {
-      score += 5;
+      score += 8;
     }
 
     // 3. Sub-judul H2 (bobot 15 poin)
@@ -162,6 +180,10 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
       leadWords,
       mobileFriendly,
       violatingParas,
+      factCount,
+      contextCount,
+      opiniCount,
+      hasFullComposition,
       seoScore: Math.min(100, score),
       zone,
       zoneLabel,
@@ -320,6 +342,29 @@ export default function WordCalculatorSEO({ text = '', paragraphs = [], title = 
           <span style={{ fontWeight: 600, color: metrics.mobileFriendly ? 'inherit' : 'var(--color-danger-fg)' }}>
             {metrics.mobileFriendly ? 'Lolos' : `${metrics.violatingParas.length} paragraf kepanjangan`}
           </span>
+        </div>
+
+        {/* 6. Komposisi Jurnalistik (FACT, CONTEXT, OPINI) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {metrics.hasFullComposition ? (
+              <CheckCircle size={14} style={{ color: 'var(--color-success-fg)' }} />
+            ) : (
+              <AlertTriangle size={14} style={{ color: 'var(--color-attention-fg)' }} />
+            )}
+            <span>Komposisi Jurnalistik (Fakta, Konteks, Opini)</span>
+          </div>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <Badge variant={metrics.factCount > 0 ? 'pass' : 'neutral'} style={{ fontSize: '10px', padding: '1px 5px' }}>
+              FACT: {metrics.factCount}
+            </Badge>
+            <Badge variant={metrics.contextCount > 0 ? 'info' : 'neutral'} style={{ fontSize: '10px', padding: '1px 5px' }}>
+              CTX: {metrics.contextCount}
+            </Badge>
+            <Badge variant={metrics.opiniCount > 0 ? 'warn' : 'neutral'} style={{ fontSize: '10px', padding: '1px 5px' }}>
+              OPINI: {metrics.opiniCount}
+            </Badge>
+          </div>
         </div>
       </div>
 

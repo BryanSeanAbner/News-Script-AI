@@ -182,7 +182,8 @@ def generate_draft(angle_title: str, article_title: str, facts: List[Dict]) -> D
     
     facts_text = "\n".join([f"- {f.get('text', '')}" for f in facts])
     
-    prompt = f"""Tulis draft artikel berita dengan struktur berlabel dan RUMUS JUMLAH KATA SEO GOOGLE 2026.
+    prompt = f"""Kamu adalah jurnalis dan redaktur pelaksana senior.
+Tulis artikel berita berkualitas tinggi dengan REASONING JURNALISTIK MENDALAM dan RUMUS JUMLAH KATA SEO GOOGLE 2026.
 
 Judul: {article_title}
 Sudut Pandang: {angle_title}
@@ -190,30 +191,32 @@ Sudut Pandang: {angle_title}
 Fakta yang tersedia:
 {facts_text}
 
-ATURAN WAJIB RUMUS SEO GOOGLE 2026 (JUMLAH KATA & STRUKTUR ±400 KATA):
-1. TOTAL PANJANG ARTIKEL: 350 - 500 KATA (ZONA AMAN PALING SEO, target ideal ~400 kata).
-2. STRUKTUR ARTIKEL:
-   - Paragraf 1 (Lead 5W1H): 40-50 kata to the point (siapa, apa, kapan, di mana, mengapa).
-   - H2 ke-1 + Isi (Kronologi): 100-120 kata + kutipan langsung narasumber pertama.
-   - H2 ke-2 + Isi (Konteks & Bukti): 100-120 kata berisi data pendukung/latar belakang.
-   - H2 ke-3 + Isi (Tanggapan Pejabat & Hukuman/Sanksi): 80-100 kata + kutipan langsung kedua.
-   - Penutup: ~30 kata dasar hukum/update perkembangan terkini.
-3. KETERBACAAN MOBILE: Setiap paragraf MAKSIMAL 3 KALIMAT agar nyaman dibaca di layar HP (anti bounce rate tinggi).
-4. Setiap paragraf WAJIB diberi label [FACT], [CONTEXT], atau [OPINI]:
-   - [FACT]: Paragraf berisi fakta terverifikasi dari sumber (sertakan "quote" verbatim dan "source_fact_id" jika ada)
-   - [CONTEXT]: Paragraf berisi konteks atau latar belakang
-   - [OPINI]: Paragraf berisi interpretasi atau analisis situasi
+══════════════════════════════════════════════════════════════════════════
+ATURAN KRITIS (WAJIB DIPATUHI):
+══════════════════════════════════════════════════════════════════════════
+1. JANGAN HANYA COPY-PASTE! AI harus melakukan penalaran (reasoning) mandiri:
+   - Terangkan latar belakang isu, institusi terkait, dan regulasi yang menaungi.
+   - Uraikan kronologi secara terperinci.
+2. WAJIB MENYERTAKAN MINIMAL 2 PARAGRAF BERLABEL [OPINI]:
+   - Berisi analisis independen redaksi/pengamat tentang implikasi kebijakan/peristiwa bagi publik.
+   - Catatan kritis evaluasi mitigasi risiko ke depan.
+3. TOTAL PANJANG ARTIKEL HARUS 380 - 430 KATA (ZONA AMAN PALING SEO). JANGAN KURANG DARI 350 KATA!
+4. STRUKTUR 8 PARAGRAF:
+   - Paragraf 1 (Lead 5W1H): 40-50 kata to the point (3 kalimat lengkap) -> [FACT]
+   - H2 ke-1 (Kronologi): 2 paragraf, total 100-120 kata -> [FACT] (dengan kutipan) + [CONTEXT]
+   - H2 ke-2 (Konteks & Analisis): 2 paragraf, total 100-120 kata -> [CONTEXT] + [OPINI]
+   - H2 ke-3 (Tanggapan Resmi & Catatan): 2 paragraf, total 80-100 kata -> [FACT] (dengan kutipan) + [OPINI]
+   - Penutup: 1 paragraf, 30-40 kata -> [CONTEXT]
+5. KETERBACAAN MOBILE: Setiap paragraf WAJIB terdiri dari 2 hingga 3 KALIMAT (maks 3 kalimat).
 
-PENTING: Respons harus berupa JSON lengkap dan valid. Jangan potong di tengah.
-
-Format respons sebagai JSON (tanpa markdown):
+Format respons sebagai JSON valid:
 {{
     "content": "Isi artikel lengkap dengan sub-judul H2 (format markdown ## Subjudul) dan paragraf berlabel",
     "paragraphs": [
         {{
             "order": 1,
             "type": "FACT",
-            "text": "Paragraf pembuka lead 5W1H tanpa label di dalam teks (maks 3 kalimat)...",
+            "text": "Paragraf pembuka lead 5W1H tanpa label di dalam teks (40-50 kata, tepat 3 kalimat)...",
             "source_fact_id": "fact_1",
             "quote": null
         }},
@@ -223,13 +226,55 @@ Format respons sebagai JSON (tanpa markdown):
             "text": "Teks kronologi dengan kutipan langsung narsum...",
             "source_fact_id": "fact_2",
             "quote": "kutipan verbatim narsum"
+        }},
+        {{
+            "order": 3,
+            "type": "CONTEXT",
+            "text": "Pendalaman kronologi detail pelaksanaan di lapangan...",
+            "source_fact_id": null,
+            "quote": null
+        }},
+        {{
+            "order": 4,
+            "type": "CONTEXT",
+            "text": "Konteks latar belakang aturan dan peran institusi...",
+            "source_fact_id": null,
+            "quote": null
+        }},
+        {{
+            "order": 5,
+            "type": "OPINI",
+            "text": "Analisis editorial menilai bahwa kebijakan ini memberikan kepastian namun membutuhkan pengawasan ketat...",
+            "source_fact_id": null,
+            "quote": null
+        }},
+        {{
+            "order": 6,
+            "type": "FACT",
+            "text": "Pernyataan tindak lanjut dari pihak berwenang...",
+            "source_fact_id": null,
+            "quote": "kutipan kedua narsum"
+        }},
+        {{
+            "order": 7,
+            "type": "OPINI",
+            "text": "Catatan kritis redaksi mengingatkan pentingnya transparansi pengurus agar tidak membebani APBN...",
+            "source_fact_id": null,
+            "quote": null
+        }},
+        {{
+            "order": 8,
+            "type": "CONTEXT",
+            "text": "Paragraf penutup merangkum arah perkembangan kasus selanjutnya.",
+            "source_fact_id": null,
+            "quote": null
         }}
     ],
     "word_count": 412,
     "label_stats": {{
-        "FACT": 4,
-        "CONTEXT": 2,
-        "OPINI": 1
+        "FACT": 3,
+        "CONTEXT": 3,
+        "OPINI": 2
     }}
 }}"""
     
@@ -239,16 +284,40 @@ Format respons sebagai JSON (tanpa markdown):
         data = json.loads(extract_json(result_text))
         
         # Ensure word_count
-        if "word_count" not in data:
-            data["word_count"] = len(data.get("content", "").split())
+        all_text = " ".join([p.get("text", "") for p in data.get("paragraphs", [])])
+        data["word_count"] = len(all_text.split()) if all_text else len(data.get("content", "").split())
         
-        # Ensure label_stats dari paragraphs
-        if "label_stats" not in data and data.get("paragraphs"):
-            stats = {"FACT": 0, "CONTEXT": 0, "OPINI": 0}
-            for p in data.get("paragraphs", []):
-                t = p.get("type", "CONTEXT")
-                stats[t] = stats.get(t, 0) + 1
-            data["label_stats"] = stats
+        # Ensure label_stats
+        stats = {"FACT": 0, "CONTEXT": 0, "OPINI": 0}
+        for p in data.get("paragraphs", []):
+            t = p.get("type", "CONTEXT")
+            stats[t] = stats.get(t, 0) + 1
+        data["label_stats"] = stats
+        
+        # Agentic self-expansion jika < 350 kata atau belum ada OPINI
+        if data["word_count"] < 350 or stats.get("OPINI", 0) == 0:
+            print(f"[DRAFT EXPANSION] Draft only {data['word_count']} words. Expanding to 380-430 words...")
+            exp_prompt = f"""Kamu adalah redaktur senior. Naskah berita berikut baru memiliki {data['word_count']} kata dan memerlukan pengembangan reasoning analitis agar mencapai 380 - 430 KATA sesuai standar Google News 2026.
+
+NASKAH SAAT INI:
+{json.dumps(data.get('paragraphs', []), indent=2, ensure_ascii=False)}
+
+INSTRUKSI:
+1. Perpanjang tiap paragraf agar memuat 45-60 kata (2-3 kalimat per paragraf).
+2. WAJIB sertakan minimal 2 paragraf bertipe OPINI (analisis implikasi & catatan kritis redaksi).
+3. Total panjang HARUS mencapai 380-430 kata.
+KEMBALIKAN HANYA JSON VALID LENGKAP."""
+            exp_res = provider.generate(exp_prompt, max_tokens=8000)
+            try:
+                exp_data = json.loads(extract_json(exp_res))
+                exp_paras = exp_data.get("paragraphs", [])
+                exp_all_text = " ".join([p.get("text", "") for p in exp_paras])
+                exp_words = len(exp_all_text.split())
+                if exp_words > data["word_count"]:
+                    exp_data["word_count"] = exp_words
+                    data = exp_data
+            except Exception as e_exp:
+                print(f"Draft expansion failed: {e_exp}")
         
         # Validate paragraphs structure
         if not data.get("paragraphs") or len(data.get("paragraphs", [])) == 0:
